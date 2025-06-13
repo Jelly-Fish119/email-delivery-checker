@@ -1,0 +1,282 @@
+# === STEP 1: Add all your email accounts here ===
+accounts = [
+    {"email": "traviscaldw@gmail.com", "password": "jlgr dpgu cybi xlmj", "host": "imap.gmail.com"},
+    {"email": "amandarober15@gmail.com", "password": "jews zkib eckz pmlp", "host": "imap.gmail.com"},
+    {"email": "larrywright1644@gmail.com", "password": "rdhy yxob pxfb nyvv", "host": "imap.gmail.com"},
+    {"email": "elaineriley1970@gmail.com", "password": "fzeo krhz pmko wlts", "host": "imap.gmail.com"},
+    {"email": "johannalove2012@gmail.com", "password": "yoix vqit zkdn ibrb", "host": "imap.gmail.com"},
+    {"email": "cdgnxdfh6@gmail.com", "password": "etre zrxw fmkc poin", "host": "imap.gmail.com"},
+]
+
+# === STEP 2: Function to monitor one email account ===
+import imaplib
+import email
+from email.header import decode_header
+import threading
+import time
+import queue
+from datetime import datetime
+
+def decode_email_header(header):
+    """Decode email header properly"""
+    if header is None:
+        return ""
+    decoded_header = decode_header(header)
+    header_parts = []
+    for content, charset in decoded_header:
+        if isinstance(content, bytes):
+            if charset:
+                try:
+                    header_parts.append(content.decode(charset))
+                except Exception:
+                    header_parts.append(content.decode('utf-8', errors='replace'))
+            else:
+                header_parts.append(content.decode('utf-8', errors='replace'))
+        else:
+            header_parts.append(content)
+    return ' '.join(header_parts)
+
+def get_email_content(msg):
+    """Extract email content from message"""
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() == "text/plain" and not part.get('Content-Disposition'):
+                try:
+                    return part.get_payload(decode=True).decode()
+                except Exception:
+                    return "Unable to decode content"
+    else:
+        try:
+            return msg.get_payload(decode=True).decode()
+        except Exception:
+            return "Unable to decode content"
+    return ""
+
+def fetch_all_emails(mail, email_address, folder):
+    try:
+        status, _ = mail.select(folder)
+        if status != 'OK':
+            print(f"[{email_address}] ⚠ Cannot select folder '{folder}'")
+            return
+
+        status, messages = mail.search(None, 'ALL')
+        if status != 'OK':
+            print(f"[{email_address}] ⚠ Search failed in folder '{folder}'")
+            return
+
+        message_nums = messages[0].split()
+        print(f"\n[{email_address}] 📂 Connected to folder: {folder}")
+        print(f"[{email_address}] 📧 Found {len(message_nums)} emails in {folder}")
+
+        for num in message_nums:
+            status, data = mail.fetch(num, '(RFC822)')
+            if status != 'OK':
+                print(f"[{email_address}] ⚠ Failed to fetch message {num}")
+                continue
+
+            raw_email = data[0][1]
+            msg = email.message_from_bytes(raw_email)
+
+            subject = decode_email_header(msg['subject'])
+            from_addr = decode_email_header(msg['from'])
+            date = msg['date'] if msg['date'] else ""
+
+            content = get_email_content(msg)
+
+            print(f"\n{'='*50}")
+            print(f"From: {from_addr}")
+            print(f"Subject: {subject}")
+            print(f"Date: {date}")
+            print(f"Content: {content[:200]}...")  # Show first 200 chars of content
+            print(f"{'='*50}\n")
+
+    except Exception as e:
+        print(f"[{email_address}] ⚠ Error fetching emails from {folder}: {e}")
+
+def monitor_folder(email_address, password, host, folder, poll_interval=60):
+    while True:
+        try:
+            mail = imaplib.IMAP4_SSL(host)
+            mail.login(email_address, password)
+            print(f"[{email_address}] ✅ Connected to {host} for folder {folder}")
+
+            fetch_all_emails(mail, email_address, folder)
+
+            last_seen_uids = set()
+
+            while True:
+                status, _ = mail.select(folder)
+                if status != 'OK':
+                    print(f"[{email_address}] ⚠ Cannot select folder '{folder}'")
+                    time.sleep(poll_interval)
+                    continue
+
+                status, messages = mail.search(None, 'UNSEEN')
+                if status != 'OK':
+                    print(f"[{email_address}] ⚠ Search failed in folder '{folder}'")
+                    time.sleep(poll_interval)
+                    continue
+
+                unseen_uids = set(messages[0].split())
+                new_uids = unseen_uids - last_seen_uids
+
+                for uid in new_uids:
+                    status, data = mail.fetch(uid, '(RFC822)')
+                    if status != 'OK':
+                        print(f"[{email_address}] ⚠ Failed to fetch new message {uid}")
+                        continue
+
+                    raw_email = data[0][1]
+                    msg = email.message_from_bytes(raw_email)
+
+                    subject = decode_email_header(msg['subject'])
+                    from_addr = decode_email_header(msg['from'])
+                    date = msg['date'] if msg['date'] else ""
+                    content = get_email_content(msg)
+
+                    print(f"\n{'='*50}")
+                    print(f"[{email_address}] 📨 NEW EMAIL in {folder}")
+                    print(f"From: {from_addr}")
+                    print(f"Subject: {subject}")
+                    print(f"Date: {date}")
+                    print(f"Content: {content[:200]}...")
+                    print(f"{'='*50}\n")
+
+                    last_seen_uids.add(uid)
+
+                time.sleep(poll_interval)
+
+        except Exception as e:
+            print(f"[{email_address}] ❌ Connection error on folder '{folder}': {e}")
+            time.sleep(15)  # Reconnect delay
+
+def monitor_email(email_address, password, host, folders=["INBOX", "[Gmail]/Spam"], poll_interval=60):
+    """
+    Monitor email accounts and return results
+    """
+    result_queue = queue.Queue()
+    threads = []
+    
+    def monitor_folder_with_result(email_address, password, host, folder, poll_interval, result_queue):
+        try:
+            # Your existing monitor_folder logic here
+            # ... existing monitoring code ...
+            
+            # Add result to queue
+            result_queue.put({
+                'email': email_address,
+                'folder': folder,
+                'status': 'success',
+                'timestamp': datetime.now().isoformat(),
+                'message': f'Successfully monitored {folder}'
+            })
+        except Exception as e:
+            result_queue.put({
+                'email': email_address,
+                'folder': folder,
+                'status': 'error',
+                'timestamp': datetime.now().isoformat(),
+                'error': str(e)
+            })
+
+    # Start monitoring threads
+    for folder in folders:
+        t = threading.Thread(
+            target=monitor_folder_with_result,
+            args=(email_address, password, host, folder, poll_interval, result_queue),
+            daemon=True
+        )
+        t.start()
+        threads.append(t)
+
+    # Wait for initial results (timeout after 30 seconds)
+    results = []
+    timeout = time.time() + 30
+    while time.time() < timeout and len(results) < len(folders):
+        try:
+            result = result_queue.get(timeout=1)
+            results.append(result)
+        except queue.Empty:
+            continue
+
+    # Return results immediately
+    return {
+        'email': email_address,
+        'host': host,
+        'folders': folders,
+        'results': results,
+        'timestamp': datetime.now().isoformat()
+    }
+
+def fetch_emails_json(email_address, password, host, folders=["INBOX", "[Gmail]/Spam"]):
+    """
+    Fetch emails from specified folders and return as JSON
+    """
+    results = []
+    
+    try:
+        mail = imaplib.IMAP4_SSL(host)
+        mail.login(email_address, password)
+        
+        for folder in folders:
+            folder_data = {
+                'folder': folder,
+                'emails': [],
+                'status': 'success'
+            }
+            
+            try:
+                status, _ = mail.select(folder)
+                if status != 'OK':
+                    folder_data['status'] = 'error'
+                    folder_data['error'] = f"Cannot select folder '{folder}'"
+                    results.append(folder_data)
+                    continue
+
+                status, messages = mail.search(None, 'ALL')
+                if status != 'OK':
+                    folder_data['status'] = 'error'
+                    folder_data['error'] = f"Search failed in folder '{folder}'"
+                    results.append(folder_data)
+                    continue
+
+                message_nums = messages[0].split()
+                
+                for num in message_nums:
+                    status, data = mail.fetch(num, '(RFC822)')
+                    if status != 'OK':
+                        continue
+
+                    raw_email = data[0][1]
+                    msg = email.message_from_bytes(raw_email)
+
+                    email_data = {
+                        'subject': decode_email_header(msg['subject']),
+                        'from': decode_email_header(msg['from']),
+                        'date': msg['date'] if msg['date'] else "",
+                        'content': get_email_content(msg)
+                    }
+                    
+                    folder_data['emails'].append(email_data)
+                
+            except Exception as e:
+                folder_data['status'] = 'error'
+                folder_data['error'] = str(e)
+            
+            results.append(folder_data)
+        
+        mail.logout()
+        
+    except Exception as e:
+        return {
+            'status': 'error',
+            'error': str(e)
+        }
+    
+    return {
+        'email': email_address,
+        'host': host,
+        'folders': results,
+        'timestamp': datetime.now().isoformat()
+    }
+

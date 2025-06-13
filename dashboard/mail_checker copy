@@ -1,0 +1,190 @@
+# === STEP 1: Add all your email accounts here ===
+accounts = [
+    # {"email": "marionlopez1960@gmail.com", "password": "wkvl mrfk ftgi rpcf", "host": "imap.gmail.com"},
+    {"email": "traviscaldw@gmail.com", "password": "jlgr dpgu cybi xlmj", "host": "imap.gmail.com"},
+    {"email": "amandarober15@gmail.com", "password": "jews zkib eckz pmlp", "host": "imap.gmail.com"},
+    {"email": "larrywright1644@gmail.com", "password": "rdhy yxob pxfb nyvv", "host": "imap.gmail.com"},
+    {"email": "elaineriley1970@gmail.com", "password": "fzeo krhz pmko wlts", "host": "imap.gmail.com"},
+    {"email": "johannalove2012@gmail.com", "password": "yoix vqit zkdn ibrb", "host": "imap.gmail.com"},
+    {"email": "cdgnxdfh6@gmail.com", "password": "etre zrxw fmkc poin", "host": "imap.gmail.com"},
+    # {"email": "ffbgxvgd108@gmail.com", "password": "vwwv yfwv dtox uyip", "host": "imap.gmail.com"},
+
+    # {"email": "user3@outlook.com", "password": "app_password3", "host": "outlook.office365.com"},
+    # {"email": "user4@yahoo.com", "password": "app_password4", "host": "imap.mail.yahoo.com"},
+    # {"email": "user5@aol.com", "password": "app_password5", "host": "imap.aol.com"},
+    # Add more accounts from same/different hosts
+]
+
+# === STEP 2: Function to monitor one email account ===
+import threading, time, email
+from imapclient import IMAPClient
+from email.header import decode_header
+from datetime import datetime
+
+def decode_email_header(header):
+    """Decode email header properly"""
+    decoded_header = decode_header(header)
+    header_parts = []
+    for content, charset in decoded_header:
+        if isinstance(content, bytes):
+            if charset:
+                header_parts.append(content.decode(charset))
+            else:
+                header_parts.append(content.decode('utf-8', errors='replace'))
+        else:
+            header_parts.append(content)
+    return ' '.join(header_parts)
+
+def get_email_content(msg):
+    """Extract email content from message"""
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() == "text/plain":
+                try:
+                    return part.get_payload(decode=True).decode()
+                except:
+                    return "Unable to decode content"
+    else:
+        try:
+            return msg.get_payload(decode=True).decode()
+        except:
+            return "Unable to decode content"
+
+def monitor_folder(client, email_address, folder, idle_timeout=300, poll_interval=60):
+    """Monitor a single folder and display all emails"""
+    try:
+        client.select_folder(folder)
+        print(f"\n[{email_address}] 📂 Connected to folder: {folder}")
+        time.sleep(2)
+        # Get all emails in the folder
+        messages = client.search(['ALL'])
+        if messages:
+            print(f"messages: {messages}\n")
+            print(f"\n[{email_address}] 📧 Found {len(messages)} emails in {folder}")
+            
+            # Fetch all messages
+            email_data = client.fetch(messages, ['RFC822'])
+            print(f"email_data: {email_data}\n")
+            for uid, data in email_data.items():
+                raw_email = data[b'RFC822']
+                msg = email.message_from_bytes(raw_email)
+                
+                # Decode headers
+                # subject = decode_email_header(msg['subject'])
+                # from_addr = decode_email_header(msg['from'])
+                # date = msg['date']
+                subject = msg['subject']
+                from_addr = msg['from']
+                date = msg['date']
+                # Get email content
+                content = get_email_content(msg)
+                
+                # Print email details
+                print(f"\n{'='*50}")
+                print(f"From: {from_addr}")
+                print(f"Subject: {subject}")
+                print(f"Date: {date}")
+                print(f"Content: {content[:200]}...")  # Show first 200 chars of content
+                print(f"{'='*50}\n")
+
+        
+        # Monitor for new emails
+        while True:
+            try:
+                print(f"[{email_address}] 💤 IDLE started on {folder}")
+                if folder.upper() == "INBOX":
+                    # Use IDLE for Inbox
+                    with client.idle() as idle_cm:
+                        print(f"[{email_address}] 💤 IDLE started on {folder}")
+                        responses = client.idle_check(timeout=idle_timeout)
+                        client.idle_done()
+                        
+                        if responses:
+                            unseen = client.search(['UNSEEN'])
+                            for uid in unseen:
+                                raw = client.fetch([uid], ['RFC822'])[uid][b'RFC822']
+                                msg = email.message_from_bytes(raw)
+                                
+                                # Decode and print new email
+                                # subject = decode_email_header(msg['subject'])
+                                # from_addr = decode_email_header(msg['from'])
+                                subject = msg['subject']
+                                from_addr = msg['from']
+                                date = msg['date']
+                                content = get_email_content(msg)
+                                
+                                print(f"\n{'='*50}")
+                                print(f"📨 NEW EMAIL in {folder}")
+                                print(f"From: {from_addr}")
+                                print(f"Subject: {subject}")
+                                print(f"Date: {date}")
+                                print(f"Content: {content[:200]}...")
+                                print(f"{'='*50}\n")
+                else:
+                    # Use polling for other folders
+                    unseen = client.search(['UNSEEN'])
+                    for uid in unseen:
+                        raw = client.fetch([uid], ['RFC822'])[uid][b'RFC822']
+                        msg = email.message_from_bytes(raw)
+                        
+                        # Decode and print new email
+                        subject = decode_email_header(msg['subject'])
+                        from_addr = decode_email_header(msg['from'])
+                        date = msg['date']
+                        content = get_email_content(msg)
+                        
+                        print(f"\n{'='*50}")
+                        print(f"📨 NEW EMAIL in {folder}")
+                        print(f"From: {from_addr}")
+                        print(f"Subject: {subject}")
+                        print(f"Date: {date}")
+                        print(f"Content: {content[:200]}...")
+                        print(f"{'='*50}\n")
+                    
+                    time.sleep(poll_interval)
+                    
+            except Exception as e:
+                print(f"[{email_address}] ⚠ Error monitoring {folder}: {e}")
+                time.sleep(5)
+                
+    except Exception as e:
+        print(f"[{email_address}] ⚠ Cannot select folder '{folder}': {e}")
+
+def monitor_email(email_address, password, host, folders=["INBOX", "[Gmail]/Spam"],
+                  idle_timeout=300, poll_interval=60, reconnect_delay=15):
+    while True:
+        try:
+            with IMAPClient(host, use_uid=True, ssl=True) as client:
+                client.login(email_address, password)
+                print(f"[{email_address}] ✅ Connected to {host}")
+
+                threads = []
+                for folder in folders:
+                    t = threading.Thread(target=monitor_folder,
+                                         args=(client, email_address, folder, idle_timeout, poll_interval),
+                                         daemon=True)
+                    t.start()
+                    threads.append(t)
+
+                # Keep main thread alive to maintain connection
+                for t in threads:
+                    t.join()
+
+        except Exception as e:
+            print(f"[{email_address}] ❌ Connection error: {e}")
+            time.sleep(reconnect_delay)
+
+# Launch monitoring for all accounts
+for acc in accounts:
+    t = threading.Thread(
+        target=monitor_email,
+        args=(acc["email"], acc["password"], acc["host"]),
+        daemon=True
+    )
+    t.start()
+
+try:
+    while True:
+        time.sleep(600)
+except KeyboardInterrupt:
+    print("Stopped monitoring.")

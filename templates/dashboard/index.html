@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="navbar">
+    <div style="margin-left: 30px; font-size: 22px; font-weight: 700; letter-spacing: 1px;">Email Checker</div>
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Enter keyword to search your mails.">
+        <button><span style="font-size: 18px;">🔍</span></button>
+    </div>
+    <div class="right-icons">
+        <button>Copy Recipients</button>
+        <span class="icon">⚙️</span>
+        <span class="icon">🔔</span>
+        <div class="user" onclick="toggleLogout()">👤</div>
+        <div id="logoutMenu" style="display: none; position: absolute; top: 60px; right: 30px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <a href="{% url 'logout_page' %}" style="color: #2c3e50; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-sign-out-alt"></i>
+                Log out
+            </a>
+        </div>
+        <script>
+            function toggleLogout() {
+                const menu = document.getElementById('logoutMenu');
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            }
+        </script>
+    </div>
+</div>
+
+<div class="dashboard">
+    <div class="dashboard-card">
+        <div class="circle" id="gmailCount">0</div>
+        <div class="label">GMAIL</div>
+    </div>
+    <div class="dashboard-card">
+        <div class="circle" id="outlookCount">0</div>
+        <div class="label">Outlook / Hotmail</div>
+    </div>
+    <div class="dashboard-card">
+        <div class="circle" id="yahooCount">0</div>
+        <div class="label">At&t / Yahoo</div>
+    </div>
+    <div class="dashboard-card">
+        <div class="circle" id="othersCount">0</div>
+        <div class="label">Others</div>
+    </div>
+</div>
+<div class="filter-controls">
+    <select id="dateFilter" class="date-filter">
+        <option value="7" selected>Last 7 days</option>
+        <option value="14">Last 2 weeks</option>
+        <option value="30">Last month</option>
+        <option value="all">All time (10 years)</option>
+    </select>
+    <div id="loading-indicator" style="display:none; margin-bottom:10px;">Loading...</div>
+</div>
+<div class="mail-columns">
+    <div class="mail-list">
+        <div class="list-title">Google Email Accounts</div>
+        <div class="list-title-number" id="gmailCount"></div>
+        
+        <div class="mail-list-content" id="email-list-gmail">
+            <!-- Email data will be loaded here -->
+        </div>
+    </div>
+    <div class="mail-list">
+        <div class="list-title">Outlook / Hotmail Email Accounts</div>
+        <div class="list-title-number" id="outlookCount"></div>
+        <div class="mail-list-content" id="email-list-outlook">
+            <!-- Email data will be loaded here -->
+        </div>
+    </div>
+    <div class="mail-list">
+        <div class="list-title">At&t / Yahoo Email Accounts</div>
+        <div class="list-title-number" id="yahooCount"></div>
+        <div class="mail-list-content" id="email-list-yahoo">
+            <!-- Email data will be loaded here -->
+        </div>
+    </div>
+    <div class="mail-list">
+        <div class="list-title">Others AOL Email Accounts</div>
+        <div class="list-title-number" id="othersCount"></div>
+        <div class="mail-list-content" id="email-list-aol">
+            <!-- Email data will be loaded here -->
+        </div>
+    </div>
+    <div class="email-details" id="email-details">
+        <!-- Selected email details will be shown here -->
+    </div>
+</div>
+
+<script>
+let lastUpdateTime = null;
+let isPolling = false;
+const POLL_INTERVAL = 30000; // 30 seconds
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+}
+
+function updateDashboardCounts(data) {
+    let gmailCount = 0;
+    let outlookCount = 0;
+    let yahooCount = 0;
+    let othersCount = 0;
+
+    data.forEach(account => {
+        if (account.folders) {
+            account.folders.forEach(folder => {
+                if (folder.emails) {
+                    const count = folder.emails.length;
+                    if (account.host.includes('gmail')) {
+                        gmailCount += count;
+                    } else if (account.host.includes('outlook') || account.host.includes('hotmail')) {
+                        outlookCount += count;
+                    } else if (account.host.includes('yahoo')) {
+                        yahooCount += count;
+                    } else {
+                        othersCount += count;
+                    }
+                }
+            });
+        }
+    });
+
+    document.getElementById('gmailCount').textContent = gmailCount;
+    document.getElementById('outlookCount').textContent = outlookCount;
+    document.getElementById('yahooCount').textContent = yahooCount;
+    document.getElementById('othersCount').textContent = othersCount;
+}
+
+function drawGmailMail(email) {
+    const emailDiv = document.createElement('div');
+    emailDiv.className = 'email-item';
+    emailDiv.innerHTML = `
+        <div class="email-icon">
+            <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico" alt="gmail">
+        </div>
+        <div class="email-subject">${email.subject}</div>
+        <div class="email-from">From: ${email.from}</div>
+        <div class="email-date">${formatDate(email.date)}</div>
+    `;
+    emailDiv.onclick = () => showEmailDetails(email);
+    return emailDiv;
+}
+
+function drawOutlookMail(email) {
+    const emailDiv = document.createElement('div');
+    emailDiv.className = 'email-item';
+    emailDiv.innerHTML = `
+        <div class="email-icon">
+            <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/outlook.ico" alt="outlook">
+        </div>
+        <div class="email-subject">${email.subject}</div>
+        <div class="email-from">From: ${email.from}</div>
+        <div class="email-date">${formatDate(email.date)}</div>
+    `;
+    emailDiv.onclick = () => showEmailDetails(email);
+    return emailDiv;
+}
+
+function drawYahooMail(email) {
+    const emailDiv = document.createElement('div');
+    emailDiv.className = 'email-item';
+    emailDiv.innerHTML = `
+        <div class="email-icon">
+            <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/yahoo.ico" alt="yahoo">
+        </div>
+        <div class="email-subject">${email.subject}</div>
+        <div class="email-from">From: ${email.from}</div>
+        <div class="email-date">${formatDate(email.date)}</div>
+    `;
+    emailDiv.onclick = () => showEmailDetails(email);
+    return emailDiv;
+}
+
+function drawAolMail(email) {
+    const emailDiv = document.createElement('div');
+    emailDiv.className = 'email-item';
+    emailDiv.innerHTML = `
+        <div class="email-icon">
+            <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/aol.ico" alt="aol">
+        </div>
+        <div class="email-subject">${email.subject}</div>
+        <div class="email-from">From: ${email.from}</div>
+        <div class="email-date">${formatDate(email.date)}</div>
+    `;
+    emailDiv.onclick = () => showEmailDetails(email);
+    return emailDiv;
+}
+
+function updateEmailList(data) {
+    const emailListGmail = document.getElementById('email-list-gmail');
+    const emailListOutlook = document.getElementById('email-list-outlook');
+    const emailListYahoo = document.getElementById('email-list-yahoo');
+    const emailListAol = document.getElementById('email-list-aol');
+    
+    data.forEach(email => {
+        if (email.host.includes('gmail')) {
+            const emailDiv = drawGmailMail(email);
+            emailListGmail.appendChild(emailDiv);
+        } else if (email.host.includes('outlook') || email.host.includes('hotmail')) {
+            const emailDiv = drawOutlookMail(email);
+            emailListOutlook.appendChild(emailDiv);
+        } else if (email.host.includes('yahoo')) {
+            const emailDiv = drawYahooMail(email);
+            emailListYahoo.appendChild(emailDiv);
+        } else if (email.host.includes('aol')) {
+            const emailDiv = drawAolMail(email);
+            emailListAol.appendChild(emailDiv);
+        }
+    });
+}
+
+function showEmailDetails(email) {
+    const detailsDiv = document.getElementById('email-details');
+    detailsDiv.innerHTML = `
+        <div class="email-detail-header">
+            <h3>${email.subject}</h3>
+            <div class="email-meta">
+                <div>From: ${email.from}</div>
+                <div>Date: ${formatDate(email.date)}</div>
+            </div>
+        </div>
+        <div class="email-content">
+            ${email.body}
+        </div>
+    `;
+}
+
+function showNumberEmails(data) {
+    const gmailCount = data.num_gmail;
+    const outlookCount = data.num_outlook;
+    const yahooCount = data.num_yahoo;
+    const othersCount = data.num_aol;
+    const totalAccounts = data.total_accounts;
+    
+    // Update the dashboard circles
+    document.getElementById('gmailCount').innerText = gmailCount + ' emails';
+    document.getElementById('outlookCount').innerText = outlookCount + ' emails';
+    document.getElementById('yahooCount').innerText = yahooCount + ' emails';
+    document.getElementById('othersCount').innerText = othersCount + ' emails';
+    
+    // Update the list title numbers
+    document.querySelector('.mail-list:nth-child(1) .list-title-number').innerText = `(${gmailCount} emails)`;
+    document.querySelector('.mail-list:nth-child(2) .list-title-number').innerText = `(${outlookCount} emails)`;
+    document.querySelector('.mail-list:nth-child(3) .list-title-number').innerText = `(${yahooCount} emails)`;
+    document.querySelector('.mail-list:nth-child(4) .list-title-number').innerText = `(${othersCount} emails)`;
+}
+
+function filterEmailsByDate(data, days) {
+    if (days === 'all') return data;
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+    
+    return data.filter(email => {
+        const emailDate = new Date(email.date);
+        return emailDate >= cutoffDate;
+    });
+}
+
+function updateEmailData(value) {
+    if (isPolling) return;
+    isPolling = true;
+    
+    const loadingIndicator = document.getElementById('loading-indicator');
+    loadingIndicator.style.display = 'block';
+    
+    fetch(`/get_emails/?period=${value}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        const selectedDays = document.getElementById('dateFilter').value;
+        const filteredData = filterEmailsByDate(data.all_emails, selectedDays);
+        updateDashboardCounts(filteredData);
+        updateEmailList(filteredData);
+        showNumberEmails(data);
+        lastUpdateTime = new Date();
+    })
+    .catch(error => {
+        console.error('Error fetching email data:', error);
+    })
+    .finally(() => {
+        loadingIndicator.style.display = 'none';
+        isPolling = false;
+    });
+}
+
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const emailItems = document.querySelectorAll('.email-item');
+    
+    emailItems.forEach(item => {
+        const subject = item.querySelector('.email-subject').textContent.toLowerCase();
+        const from = item.querySelector('.email-from').textContent.toLowerCase();
+        const content = item.querySelector('.email-content')?.textContent.toLowerCase() || '';
+        
+        if (subject.includes(searchTerm) || from.includes(searchTerm) || content.includes(searchTerm)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// Add event listener for date filter change
+document.getElementById('dateFilter').addEventListener('change', function() {
+    console.log(this.value);
+    updateEmailData(this.value);
+});
+
+// Initial load
+var initial_date = document.getElementById('dateFilter').value;
+updateEmailData(initial_date);
+
+{% comment %} // Set up polling
+setInterval(updateEmailData, POLL_INTERVAL); {% endcomment %}
+
+// Add some CSS for the new elements
+const style = document.createElement('style');
+style.textContent = `
+    .account-section {
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+    }
+    
+    .account-header {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 3px;
+    }
+    
+    .folder-section {
+        margin: 10px 0;
+    }
+    
+    .folder-name {
+        font-weight: bold;
+        padding: 5px;
+        background: #e9ecef;
+    }
+
+    .email-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .email-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .email-item {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .email-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .email-subject {
+        font-weight: bold;
+        width: 30%;
+        height: 40px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+    }
+    
+    .email-from, .email-date {
+        font-size: 0.9em;
+        color: #666;
+    }
+    
+    .email-details {
+        padding: 20px;
+        border-left: 1px solid #ddd;
+        width: 15%;
+    }
+    
+    .email-detail-header {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .email-meta {
+        color: #666;
+        font-size: 0.9em;
+    }
+    
+    .email-content {
+        white-space: pre-wrap;
+    }
+
+    .mail-list .list-title {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .list-title-number {
+        font-size: 1.2em;
+        color: #666;
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .filter-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: 30px;
+        margin-bottom: 10px;
+        width: 100%;
+    }
+    
+    .date-filter {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: white;
+        font-size: 14px;
+        min-width: 150px;
+    }
+    
+    .date-filter:focus {
+        outline: none;
+        border-color: #007bff;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
+
+
