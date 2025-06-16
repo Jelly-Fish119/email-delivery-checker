@@ -78,7 +78,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'email_checker_pro.wsgi.application'
 
-ALLOWED_HOSTS = ["email-delivery-checker.onrender.com"]  # or set the actual Railway domain after deployment
+ALLOWED_HOSTS = ["https://email-delivery-checker-webservice.onrender.com"]  # or set the actual Railway domain after deployment
 
 ROOT_URLCONF = 'email_checker_pro.urls'
 
