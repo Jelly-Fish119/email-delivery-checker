@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -77,16 +78,38 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'email_checker_pro.wsgi.application'
 
+ALLOWED_HOSTS = ["*"]  # or set the actual Railway domain after deployment
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'email_checker_db',
+        'USER': 'postgres',
+        'PASSWORD': '123456789',  # Change this to your PostgreSQL password
+        'HOST': 'localhost',
+        'PORT': '5432',
+    },
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': 'db.sqlite3',
+        # 'USER': 'root',
+        # 'PASSWORD': '123456789',
+        # 'HOST': 'localhost',
+        # 'PORT': '3306',
+    # }
 }
+
+# For production, you can use environment variables
+# DATABASES = {
+#     'default': dj_database_url.config(
+#         default=os.getenv('DATABASE_URL', 'postgres://postgres:your_password@localhost:5432/email_checker_db'),
+#         conn_max_age=600
+#     )
+# }
 
 
 # Password validation

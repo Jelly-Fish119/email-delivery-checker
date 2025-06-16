@@ -261,6 +261,13 @@ function filterEmailsByDate(data, days) {
     });
 }
 
+function clearEmailList() {
+    document.getElementById('email-list-gmail').innerHTML = '';
+    document.getElementById('email-list-outlook').innerHTML = '';
+    document.getElementById('email-list-yahoo').innerHTML = '';
+    document.getElementById('email-list-aol').innerHTML = '';
+}
+
 function updateEmailData(value) {
     if (isPolling) return;
     isPolling = true;
@@ -275,6 +282,7 @@ function updateEmailData(value) {
     })
     .then(response => response.json())
     .then(data => {
+        clearEmailList();
         const selectedDays = document.getElementById('dateFilter').value;
         const filteredData = filterEmailsByDate(data.all_emails, selectedDays);
         updateDashboardCounts(filteredData);
@@ -409,6 +417,7 @@ style.textContent = `
     
     .email-content {
         white-space: pre-wrap;
+        overflow-wrap:anywhere;
     }
 
     .mail-list .list-title {
@@ -434,7 +443,7 @@ style.textContent = `
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-left: 30px;
+        padding-left: 30px;
         margin-bottom: 10px;
         width: 100%;
     }

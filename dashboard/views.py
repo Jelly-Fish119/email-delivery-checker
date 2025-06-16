@@ -15,6 +15,24 @@ def index(request):
     # For regular page load, just render the template
     return render(request, 'dashboard/index.html')
 
+def check_spam(folder, host, num_spam):
+    try:
+        if host == 'imap.gmail.com':
+            if str(folder).find('Junk') > -1 or str(folder).find('Spam') > -1:
+                num_spam['gmail'] += 1
+        elif host == 'imap-mail.outlook.com':
+            if str(folder).find('Junk') > -1 or str(folder).find('Spam') > -1:
+                num_spam['outlook'] += 1
+        elif host == 'imap.mail.yahoo.com':
+            if str(folder).find('Junk') > -1 or str(folder).find('Spam') > -1:
+                num_spam['yahoo'] += 1
+        elif host == 'imap.aol.com':
+            if str(folder).find('Junk') > -1 or str(folder).find('Spam') > -1:
+                num_spam['aol'] += 1
+    except Exception as e:
+        print('error', e)
+        return
+
 @login_required
 def get_emails(request):
     """
@@ -32,6 +50,12 @@ def get_emails(request):
     num_outlook = 0
     num_yahoo = 0
     num_aol = 0
+    num_spam = {
+        'gmail': 0,
+        'outlook': 0,
+        'yahoo': 0,
+        'aol': 0
+    }
     for acc in accounts:
         try:
             email_id = acc.id
@@ -55,6 +79,7 @@ def get_emails(request):
             # Convert EmailMessage objects to dictionaries
             email_list = []
             for email in emails:
+                check_spam(email.folder, email.email_account.imap_host_name, num_spam)
                 email_dict = {
                     'subject': email.subject,
                     'from': email.sender,
@@ -81,5 +106,6 @@ def get_emails(request):
         'num_outlook': num_outlook,
         'num_yahoo': num_yahoo,
         'num_aol': num_aol,
-        'total_accounts': num_gmail + num_outlook + num_yahoo + num_aol
+        'total_accounts': num_gmail + num_outlook + num_yahoo + num_aol,
+        'num_spam': num_spam
     }, safe=False)

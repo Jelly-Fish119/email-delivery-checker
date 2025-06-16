@@ -49,9 +49,8 @@ class EmailMessage(models.Model):
     subject = models.CharField(max_length=100)
     body = models.TextField()
     sender = models.CharField(max_length=100)
-    receiver = models.CharField(max_length=100)
     date = models.DateTimeField()
     folder = models.CharField(max_length=10)
-
+    
     def __str__(self):
         return self.subject 

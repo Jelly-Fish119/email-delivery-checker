@@ -14,11 +14,10 @@
 import imaplib
 from email import message_from_bytes
 from email.header import decode_header
-import threading
-import time
-import queue
-from datetime import datetime
+from datetime import datetime, timedelta
 from .models import EmailMessage, EmailAccount
+from email.utils import parsedate_to_datetime
+import pytz
 
 def get_email_content(msg):
     """Extract email content from message"""
@@ -47,6 +46,7 @@ def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'],
 
         for folder in folders:
             mail.select(folder)
+            print('folder', folder)
             status, data = mail.uid('search', None, f'(SINCE {since_date})')
             if status != 'OK':
                 continue
@@ -90,16 +90,28 @@ def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'],
 
         return all_emails
     except Exception as e:
-        # print('error', e)
+        print('error', e)
         return None
+    
+def check_folders(host):
+    if(host == 'imap.gmail.com'):
+        return ['INBOX', '[Gmail]/Spam']
+    elif(host == 'imap-mail.outlook.com'):
+        return ['INBOX', 'Junk']
+    elif(host == 'imap.mail.yahoo.com'):
+        return ['INBOX', 'Bulk Mail']
+    elif(host == 'imap.aol.com'):
+        return ['INBOX', 'Spam']
+
     
 def insert_all_emails_background(account):
     # Insert everything (no SINCE filter)
     try:
         full_emails = get_emails_checker(
-            email=account["email"],
-            password=account["password"],
-            host=account["host"],
+            email=account.email_address,
+            password=account.password,
+            folders=check_folders(account.imap_host_name),
+            host=account.imap_host_name,
             since_days=3650  # Fetch last 10 years as "all"
         )
         # Save to DB or queue
@@ -109,41 +121,62 @@ def insert_all_emails_background(account):
             try:
                 insert_to_db(email_data, account)  # Your DB save logic
             except Exception as e:
-                # print('error', e)
+                print('error', e)
                 continue
     except Exception as e:
-        # print('error', e)
+        print('error', e)
         return None
 
 
 def insert_and_show_recent_emails(account):
     recent_emails = get_emails_checker(
-        email=account["email"],
-        password=account["password"],
-        host=account["host"],
+        email=account.email_address,
+        password=account.password,
+        folders=check_folders(account.imap_host_name),
+        host=account.imap_host_name,
         since_days=7
     )
     for email_data in recent_emails:
         try:
             insert_to_db(email_data, account["email"])
         except Exception as e:
-            # print('error', e)
+            print('error', e)
             continue
     return recent_emails  # This can be shown in UI immediately
 
-def insert_to_db(email_data, acc_email):
-    # Save to DB or queue
-    account = EmailAccount.objects.get(email_address=acc_email).first()
+def parse_email_date(date_str):
     try:
-        EmailMessage.objects.create_or_update(
-            email_account=account.id,
+        # First try using email.utils.parsedate_to_datetime which is designed for email dates
+        return parsedate_to_datetime(date_str)
+    except Exception as e:
+        try:
+            # If that fails, try parsing with datetime.strptime
+            # Remove the 'GMT' and replace with '+0000' for proper timezone format
+            date_str = date_str.replace('GMT', '+0000')
+            return datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %z')
+        except Exception as e:
+            # If all parsing fails, return current time
+            return datetime.now(pytz.UTC)
+
+def insert_to_db(email_data, acc_email):
+    try:
+        account = EmailAccount.objects.get(email_address=acc_email)
+        
+        # Parse the date properly
+        date = parse_email_date(email_data.get('date', ''))
+        
+        EmailMessage.objects.update_or_create(
+            email_account=account,
             subject=email_data['subject'],
-            body=email_data['body'],
-            sender=email_data['from'],
-            receiver=email_data['to'],
+            date=date,
+            defaults={
+                'body': email_data['body'],
+                'sender': email_data['from'],
+                'folder': email_data.get('folder', 'INBOX')
+            }
         )
     except Exception as e:
-        # print('error', e)
+        print('error', e)
         return None
     return email_data
 
