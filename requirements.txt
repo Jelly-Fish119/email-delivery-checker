@@ -23,7 +23,7 @@ kombu==5.5.4
 packaging==25.0
 prometheus_client==0.22.1
 prompt_toolkit==3.0.51
-psycopg2-binary==2.9.10
+psycopg2-binary>=2.9,<3.0
 PyMySQL==1.1.1
 python-crontab==3.2.0
 python-dateutil==2.9.0.post0
