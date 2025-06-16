@@ -78,8 +78,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'email_checker_pro.wsgi.application'
 
-ALLOWED_HOSTS = ["*"]  # or set the actual Railway domain after deployment
+ALLOWED_HOSTS = ["email-delivery-checker.onrender.com"]  # or set the actual Railway domain after deployment
 
+ROOT_URLCONF = 'email_checker_pro.urls'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
