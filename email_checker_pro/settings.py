@@ -28,11 +28,7 @@ pymysql.install_as_MySQLdb()
 SECRET_KEY = 'django-insecure-7i%bz5qs#l+@u4=@_apzz6a@g=jso2z($o-u*8f(*^k%8r8l^y'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
-
+DEBUG = False
 # Application definition
 
 INSTALLED_APPS = [
@@ -156,9 +152,5 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Add your Vercel domain to ALLOWED_HOSTS
-ALLOWED_HOSTS = ['.vercel.app', '.now.sh', 'localhost', '127.0.0.1']
 
-# Make sure DEBUG is False in production
-DEBUG = False
 
