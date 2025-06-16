@@ -56,8 +56,12 @@ def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'],
                 continue
 
             uids_str = b','.join(uids)
-            result, fetch_data = mail.uid('fetch', uids_str, '(RFC822)')
-            if result != 'OK':
+            try:    
+                result, fetch_data = mail.uid('fetch', uids_str, '(RFC822)')
+                if result != 'OK':
+                    continue
+            except Exception as e:
+                print('error', e)
                 continue
 
             for i in range(0, len(fetch_data), 2):
