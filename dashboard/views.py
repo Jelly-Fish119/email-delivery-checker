@@ -15,20 +15,28 @@ def index(request):
     # For regular page load, just render the template
     return render(request, 'dashboard/index.html')
 
-def check_spam(folder, host, num_spam):
+def check_spam(folder, host, num_spam, num_inbox):
     try:
         if host == 'imap.gmail.com':
             if str(folder).find('Junk') > -1 or str(folder).find('Spam') > -1:
                 num_spam['gmail'] += 1
+            elif str(folder).find('INBOX') > -1:
+                num_inbox['gmail'] += 1
         elif host == 'imap-mail.outlook.com':
             if str(folder).find('Junk') > -1 or str(folder).find('Spam') > -1:
                 num_spam['outlook'] += 1
+            elif str(folder).find('INBOX') > -1:
+                num_inbox['outlook'] += 1
         elif host == 'imap.mail.yahoo.com':
             if str(folder).find('Junk') > -1 or str(folder).find('Spam') > -1:
                 num_spam['yahoo'] += 1
+            elif str(folder).find('INBOX') > -1:
+                num_inbox['yahoo'] += 1
         elif host == 'imap.aol.com':
             if str(folder).find('Junk') > -1 or str(folder).find('Spam') > -1:
                 num_spam['aol'] += 1
+            elif str(folder).find('INBOX') > -1:
+                num_inbox['aol'] += 1
     except Exception as e:
         print('error', e)
         return
@@ -51,6 +59,12 @@ def get_emails(request):
     num_yahoo = 0
     num_aol = 0
     num_spam = {
+        'gmail': 0,
+        'outlook': 0,
+        'yahoo': 0,
+        'aol': 0
+    }
+    num_inbox = {
         'gmail': 0,
         'outlook': 0,
         'yahoo': 0,
@@ -79,7 +93,7 @@ def get_emails(request):
             # Convert EmailMessage objects to dictionaries
             email_list = []
             for email in emails:
-                check_spam(email.folder, email.email_account.imap_host_name, num_spam)
+                check_spam(email.folder, email.email_account.imap_host_name, num_spam, num_inbox)
                 email_dict = {
                     'subject': email.subject,
                     'from': email.sender,
@@ -107,5 +121,6 @@ def get_emails(request):
         'num_yahoo': num_yahoo,
         'num_aol': num_aol,
         'total_accounts': num_gmail + num_outlook + num_yahoo + num_aol,
-        'num_spam': num_spam
+        'num_spam': num_spam,
+        'num_inbox': num_inbox
     }, safe=False)

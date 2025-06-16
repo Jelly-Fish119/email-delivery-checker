@@ -235,6 +235,8 @@ function showNumberEmails(data) {
     const yahooCount = data.num_yahoo;
     const othersCount = data.num_aol;
     const totalAccounts = data.total_accounts;
+    const numSpam = data.num_spam;
+    const numInbox = data.num_inbox;
     
     // Update the dashboard circles
     document.getElementById('gmailCount').innerText = gmailCount + ' emails';
@@ -247,6 +249,18 @@ function showNumberEmails(data) {
     document.querySelector('.mail-list:nth-child(2) .list-title-number').innerText = `(${outlookCount} emails)`;
     document.querySelector('.mail-list:nth-child(3) .list-title-number').innerText = `(${yahooCount} emails)`;
     document.querySelector('.mail-list:nth-child(4) .list-title-number').innerText = `(${othersCount} emails)`;
+
+    // Update the percentage of numSpam
+    const spamPercentageOfGmail = (numSpam.gmail / (numInbox.gmail + numSpam.gmail)) * 100 ? NaN : 0;
+    const spamPercentageOfOutlook = (numSpam.outlook / (numInbox.outlook + numSpam.outlook)) * 100 ? NaN : 0;
+    const spamPercentageOfYahoo = (numSpam.yahoo / (numInbox.yahoo + numSpam.yahoo)) * 100 ? NaN : 0;
+    const spamPercentageOfOthers = (numSpam.aol / (numInbox.aol + numSpam.aol)) * 100 ? NaN : 0;
+
+    document.querySelector('.dashboard-card:nth-child(1) .circle').innerText = `${spamPercentageOfGmail}%`;
+    document.querySelector('.dashboard-card:nth-child(2) .circle').innerText = `${spamPercentageOfOutlook}%`;
+    document.querySelector('.dashboard-card:nth-child(3) .circle').innerText = `${spamPercentageOfYahoo}%`;
+    document.querySelector('.dashboard-card:nth-child(4) .circle').innerText = `${spamPercentageOfOthers}%`;
+
 }
 
 function filterEmailsByDate(data, days) {
@@ -289,6 +303,7 @@ function updateEmailData(value) {
         updateEmailList(filteredData);
         showNumberEmails(data);
         lastUpdateTime = new Date();
+
     })
     .catch(error => {
         console.error('Error fetching email data:', error);
