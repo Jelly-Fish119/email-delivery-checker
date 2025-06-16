@@ -176,7 +176,7 @@ def insert_to_db(email_data, acc_email):
             defaults={
                 'body': email_data['body'],
                 'sender': email_data['from'],
-                'folder': email_data.get('folder', 'INBOX')
+                'folder': email_data.get('folder', '')
             }
         )
     except Exception as e:

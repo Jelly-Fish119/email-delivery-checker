@@ -48,9 +48,9 @@ class EmailMessage(models.Model):
     email_account = models.ForeignKey(EmailAccount, on_delete=models.CASCADE)
     subject = models.CharField(max_length=255)
     body = models.TextField()
-    sender = models.CharField(max_length=100)
+    sender = models.CharField(max_length=255)
     date = models.DateTimeField()
-    folder = models.CharField(max_length=10)
+    folder = models.CharField(max_length=255)
     
     def __str__(self):
-        return self.subject 
+        return self.subject

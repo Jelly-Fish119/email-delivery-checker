@@ -69,10 +69,10 @@ def get_emails(request):
                 num_aol += 1
             # Filter emails based on the period
             if period == 'all':
-                emails = EmailMessage.objects.filter(email_account=email_id).order_by('-date')
+                emails = EmailMessage.objects.filter(email_account=acc).order_by('-date')
             else:
                 emails = EmailMessage.objects.filter(
-                    email_account=email_id,
+                    email_account=acc,
                     date__gte=cutoff_date
                 ).order_by('-date')
             
