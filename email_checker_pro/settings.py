@@ -80,11 +80,11 @@ ROOT_URLCONF = 'email_checker_pro.urls'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-     'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+     'default0': dj_database_url.config(default=os.getenv('DATABASE_URL'))
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
     #     'NAME': 'email_checker_db',
-    #     'USER': 'mailchecker',
+    #     'USER': 'postgres',
     #     'PASSWORD': '123456789',  # Change this to your PostgreSQL password
     #     'HOST': 'localhost',
     #     'PORT': '5432',
@@ -142,15 +142,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'assets')
-]
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Whitenoise configuration
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-
+print("DEBUG:", DEBUG)
+print("ALLOWED_HOSTS:", ALLOWED_HOSTS)
