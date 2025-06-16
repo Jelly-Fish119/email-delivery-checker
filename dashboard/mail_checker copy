@@ -57,7 +57,11 @@ def monitor_folder(client, email_address, folder, idle_timeout=300, poll_interva
         print(f"\n[{email_address}] 📂 Connected to folder: {folder}")
         time.sleep(2)
         # Get all emails in the folder
-        messages = client.search(['ALL'])
+        try:
+            messages = client.search(['ALL'])
+        except Exception as e:
+            print(f"[{email_address}] ⚠ Error searching folder {folder}: {e}")
+            return
         if messages:
             print(f"messages: {messages}\n")
             print(f"\n[{email_address}] 📧 Found {len(messages)} emails in {folder}")
