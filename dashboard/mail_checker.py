@@ -169,15 +169,16 @@ def insert_to_db(email_data, acc_email):
         # Parse the date properly
         date = parse_email_date(email_data.get('date', ''))
         
-        EmailMessage.objects.update_or_create(
+        if EmailMessage.objects.filter(email_account=account, subject=email_data['subject'], date=date).exists():
+            return None
+        else:
+            EmailMessage.objects.create(
             email_account=account,
             subject=email_data['subject'],
             date=date,
-            defaults={
-                'body': email_data['body'],
-                'sender': email_data['from'],
-                'folder': email_data.get('folder', '')
-            }
+            body=email_data['body'],
+            sender=email_data['from'],
+            folder=email_data.get('folder', '')
         )
     except Exception as e:
         print('error', e)
