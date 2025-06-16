@@ -44,8 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'dashboard',
     'accounts.apps.AccountsConfig',
-    'django_celery_results',
-    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -78,7 +76,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'email_checker_pro.wsgi.application'
 
-ALLOWED_HOSTS = ["*"]  # or set the actual Railway domain after deployment
+ALLOWED_HOSTS = ['email-delivery-checker-webservice.onrender.com', '127.0.0.1', 'localhost']
 
 ROOT_URLCONF = 'email_checker_pro.urls'
 
