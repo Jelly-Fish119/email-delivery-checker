@@ -142,7 +142,7 @@ def insert_and_show_recent_emails(account):
     )
     for email_data in recent_emails:
         try:
-            insert_to_db(email_data, account["email"])
+            insert_to_db(email_data, account.email_address)
         except Exception as e:
             print('error', e)
             continue
