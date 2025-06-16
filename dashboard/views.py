@@ -124,3 +124,31 @@ def get_emails(request):
         'num_spam': num_spam,
         'num_inbox': num_inbox
     }, safe=False)
+
+def search_emails(request):
+    """
+    View to search emails
+    """
+    if request.method == 'GET':
+        keyword = request.GET.get('keyword')
+        emails = EmailMessage.objects.filter(sender__icontains=keyword)
+        
+        # Convert QuerySet to list of dictionaries
+        email_list = []
+        for email in emails:
+            email_dict = {
+                'subject': email.subject,
+                'from': email.sender,
+                'date': email.date.isoformat(),
+                'body': email.body,
+                'folder': email.folder,
+                'host': email.email_account.imap_host_name
+            }
+            email_list.append(email_dict)
+            
+        return JsonResponse({
+            'emails': email_list
+        })
+    return JsonResponse({
+        'error': 'Invalid request method'
+    })

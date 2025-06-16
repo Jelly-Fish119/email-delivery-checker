@@ -5,7 +5,7 @@
     <div style="margin-left: 30px; font-size: 22px; font-weight: 700; letter-spacing: 1px;">Email Checker</div>
     <div class="search-bar">
         <input type="text" id="searchInput" placeholder="Enter keyword to search your mails.">
-        <button><span style="font-size: 18px;">🔍</span></button>
+        <button id="searchButton"><span style="font-size: 18px;">🔍</span></button>
     </div>
     <div class="right-icons">
         <button>Copy Recipients</button>
@@ -315,20 +315,21 @@ function updateEmailData(value) {
 }
 
 // Search functionality
-document.getElementById('searchInput').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const emailItems = document.querySelectorAll('.email-item');
-    
-    emailItems.forEach(item => {
-        const subject = item.querySelector('.email-subject').textContent.toLowerCase();
-        const from = item.querySelector('.email-from').textContent.toLowerCase();
-        const content = item.querySelector('.email-content')?.textContent.toLowerCase() || '';
-        
-        if (subject.includes(searchTerm) || from.includes(searchTerm) || content.includes(searchTerm)) {
-            item.style.display = '';
-        } else {
-            item.style.display = 'none';
-        }
+document.getElementById('searchButton').addEventListener('click', function() {
+    const searchTerm = document.getElementById('searchInput').value;
+    fetch(`/search_emails/?keyword=${searchTerm}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        const emails = data.emails;
+        clearEmailList();
+        updateEmailList(emails);
+    })
+    .catch(error => {
+        console.error('Error searching emails:', error);
     });
 });
 
@@ -382,6 +383,16 @@ style.textContent = `
         width: 100%;
         height: 100%;
         object-fit: contain;
+    }
+
+    #searchInput:focus {
+        outline: none;
+        border-color: #007bff;
+    }
+
+    #searchButton:focus {
+        outline: none;
+        border-color: #007bff;
     }
     
     .email-item {
