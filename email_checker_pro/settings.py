@@ -156,48 +156,9 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Celery Configuration
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+# Add your Vercel domain to ALLOWED_HOSTS
+ALLOWED_HOSTS = ['.vercel.app', '.now.sh', 'localhost', '127.0.0.1']
 
-# Enable task monitoring
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
-CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes
-
-# Celery Beat Schedule
-CELERY_BEAT_SCHEDULE = {
-    'monitor-emails': {
-        'task': 'dashboard.tasks.monitor_emails',
-        'schedule': 3600.0,  # Run every hour
-    },
-}
-
-# Redis Configuration
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/0",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "SOCKET_CONNECT_TIMEOUT": 5,
-            "SOCKET_TIMEOUT": 5,
-            "RETRY_ON_TIMEOUT": True,
-            "MAX_CONNECTIONS": 1000,
-            "CONNECTION_POOL_KWARGS": {"max_connections": 100}
-        }
-    }
-}
-
-# Flower Configuration
-FLOWER_BASIC_AUTH = ['admin:admin']  # Change this in production!
-FLOWER_PORT = 5555
-FLOWER_ADDRESS = '127.0.0.1'
-FLOWER_PERSISTENT = True
-FLOWER_DB = 'flower.db'
-FLOWER_STATE_SAVE_INTERVAL = 10000  # Save state every 10 seconds
+# Make sure DEBUG is False in production
+DEBUG = False
 
