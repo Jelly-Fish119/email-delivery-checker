@@ -46,7 +46,7 @@ class EmailMonitoringResult(models.Model):
 
 class EmailMessage(models.Model):
     email_account = models.ForeignKey(EmailAccount, on_delete=models.CASCADE)
-    subject = models.CharField(max_length=100)
+    subject = models.CharField(max_length=255)
     body = models.TextField()
     sender = models.CharField(max_length=100)
     date = models.DateTimeField()
