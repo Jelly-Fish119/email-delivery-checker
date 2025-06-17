@@ -33,7 +33,10 @@ def login_view(request):
 def logout_view(request):
     if request.method == 'GET':
         if request.user.is_authenticated:
-            Session.objects.filter(user=request.user).delete()
+            # Delete all sessions for the current user
+            Session.objects.filter(
+                session_data__contains=f'"_auth_user_id":"{request.user.id}"'
+            ).delete()
             UserSession.objects.filter(user=request.user).delete()
         logout(request)
     return render(request, 'accounts/logout.html')
