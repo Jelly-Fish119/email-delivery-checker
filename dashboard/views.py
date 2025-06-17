@@ -53,7 +53,7 @@ def get_emails(request):
     cutoff_date = datetime.now()
     if period != 'all':
         cutoff_date = cutoff_date - timedelta(days=int(period))
-    accounts = EmailAccount.objects.all()
+    accounts = EmailAccount.objects.filter(user=request.user)
     num_gmail = 0
     num_outlook = 0
     num_yahoo = 0
