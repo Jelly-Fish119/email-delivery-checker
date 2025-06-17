@@ -11,7 +11,9 @@ from datetime import datetime, timedelta
 def index(request):
     """
     View for the dashboard index page
-    """    
+    """
+    if not request.user.is_authenticated:
+        return redirect('accounts:login_page')
     # For regular page load, just render the template
     return render(request, 'dashboard/index.html')
 
