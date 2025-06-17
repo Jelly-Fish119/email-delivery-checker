@@ -133,7 +133,10 @@ def search_emails(request):
     """
     if request.method == 'GET':
         keyword = request.GET.get('keyword')
-        emails = EmailMessage.objects.filter(sender__icontains=keyword)
+        if(str(keyword).find('@') > -1):
+            emails = EmailMessage.objects.filter(sender_email__icontains=keyword)
+        else:
+            emails = EmailMessage.objects.filter(name__icontains=keyword)
         
         # Convert QuerySet to list of dictionaries
         email_list = []
@@ -144,6 +147,8 @@ def search_emails(request):
                 'date': email.date.isoformat(),
                 'body': email.body,
                 'folder': email.folder,
+                'name': email.name,
+                'sender_email': email.sender_email,
                 'host': email.email_account.imap_host_name
             }
             email_list.append(email_dict)
