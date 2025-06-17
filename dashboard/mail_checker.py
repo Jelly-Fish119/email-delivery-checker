@@ -12,7 +12,7 @@
 
 # === STEP 2: Function to monitor one email account ===
 import imaplib
-from email import message_from_bytes
+from email import message_from_bytes, utils
 from email.header import decode_header
 from datetime import datetime, timedelta
 from .models import EmailMessage, EmailAccount
@@ -81,6 +81,10 @@ def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'],
                         from_addr = from_addr.decode(errors='ignore')
 
                     content = get_email_content(email_message)
+                    name, sender_email = utils.parseaddr(from_addr)
+                    name, encoding = decode_header(name)[0]
+                    if isinstance(name, bytes):
+                        name = name.decode(encoding or 'utf-8', errors='ignore')
 
                     email_data = {
                         'subject': str(subject),
@@ -89,6 +93,8 @@ def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'],
                         'body': str(content),
                         'folder': folder,
                         'host': host,
+                        'name': name,
+                        'sender_email': sender_email
                     }
                     all_emails.append(email_data)
 
@@ -178,7 +184,9 @@ def insert_to_db(email_data, acc_email):
             date=date,
             body=email_data['body'],
             sender=email_data['from'],
-            folder=email_data.get('folder', '')
+            folder=email_data.get('folder', ''),
+            name=email_data.get('name', ''),
+            sender_email=email_data.get('sender_email', '')
         )
     except Exception as e:
         print('error', e)
