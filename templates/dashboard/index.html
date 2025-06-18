@@ -387,10 +387,10 @@ function showNumberEmails(data) {
     const spamPercentageOfYahoo = (numSpam.yahoo / (numInbox.yahoo + numSpam.yahoo)) * 100;
     const spamPercentageOfOthers = (numSpam.aol / (numInbox.aol + numSpam.aol)) * 100;
 
-    document.querySelector('.dashboard-card:nth-child(1) .circle').innerText = `${checkNaN(spamPercentageOfGmail)}%`;
-    document.querySelector('.dashboard-card:nth-child(2) .circle').innerText = `${checkNaN(spamPercentageOfOutlook)}%`;
-    document.querySelector('.dashboard-card:nth-child(3) .circle').innerText = `${checkNaN(spamPercentageOfYahoo)}%`;
-    document.querySelector('.dashboard-card:nth-child(4) .circle').innerText = `${checkNaN(spamPercentageOfOthers)}%`;
+    document.querySelector('.dashboard-card:nth-child(1) .circle').innerText = `${100 - checkNaN(spamPercentageOfGmail)}%`;
+    document.querySelector('.dashboard-card:nth-child(2) .circle').innerText = `${100 - checkNaN(spamPercentageOfOutlook)}%`;
+    document.querySelector('.dashboard-card:nth-child(3) .circle').innerText = `${100 - checkNaN(spamPercentageOfYahoo)}%`;
+    document.querySelector('.dashboard-card:nth-child(4) .circle').innerText = `${100 - checkNaN(spamPercentageOfOthers)}%`;
 
 }
 
