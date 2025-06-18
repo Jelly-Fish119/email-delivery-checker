@@ -26,9 +26,14 @@ def group_emails_by_app_email(emails):
     # Convert grouped emails into desired format
     # Take only first 3 emails for each app_email
     for app_email, email_list in email_groups.items():
-        result.append({
-            "app_email": app_email,
-            "host": host_groups[app_email],
-            "emails": email_list[:3]  # Take first 3 emails
-        })
+        length = len(email_list)
+        count = int(length / 3)
+        if(length % 3 > 0):
+            count += 1
+        for i in range(count):
+            result.append({
+                "app_email": app_email,
+                "host": host_groups[app_email],
+                "emails": email_list[i*3:(i+1)*3]
+            })
     return result;
