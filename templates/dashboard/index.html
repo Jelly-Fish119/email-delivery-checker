@@ -308,6 +308,10 @@ function showLoadingIndicator(flag) {
     }
 }
 
+function checkNaN(value) {
+    return isNaN(value) ? 0 : value;
+}
+
 function showNumberEmails(data) {
     const gmailCount = data.num_gmail;
     const outlookCount = data.num_outlook;
@@ -330,15 +334,15 @@ function showNumberEmails(data) {
     document.querySelector('.mail-list:nth-child(4) .list-title-number').innerText = `(${othersCount} emails)`;
 
     // Update the percentage of numSpam
-    const spamPercentageOfGmail = (numSpam.gmail / (numInbox.gmail + numSpam.gmail)) * 100 ? NaN : 0;
-    const spamPercentageOfOutlook = (numSpam.outlook / (numInbox.outlook + numSpam.outlook)) * 100 ? NaN : 0;
-    const spamPercentageOfYahoo = (numSpam.yahoo / (numInbox.yahoo + numSpam.yahoo)) * 100 ? NaN : 0;
-    const spamPercentageOfOthers = (numSpam.aol / (numInbox.aol + numSpam.aol)) * 100 ? NaN : 0;
+    const spamPercentageOfGmail = (numSpam.gmail / (numInbox.gmail + numSpam.gmail)) * 100;
+    const spamPercentageOfOutlook = (numSpam.outlook / (numInbox.outlook + numSpam.outlook)) * 100;
+    const spamPercentageOfYahoo = (numSpam.yahoo / (numInbox.yahoo + numSpam.yahoo)) * 100;
+    const spamPercentageOfOthers = (numSpam.aol / (numInbox.aol + numSpam.aol)) * 100;
 
-    document.querySelector('.dashboard-card:nth-child(1) .circle').innerText = `${spamPercentageOfGmail}%`;
-    document.querySelector('.dashboard-card:nth-child(2) .circle').innerText = `${spamPercentageOfOutlook}%`;
-    document.querySelector('.dashboard-card:nth-child(3) .circle').innerText = `${spamPercentageOfYahoo}%`;
-    document.querySelector('.dashboard-card:nth-child(4) .circle').innerText = `${spamPercentageOfOthers}%`;
+    document.querySelector('.dashboard-card:nth-child(1) .circle').innerText = `${checkNaN(spamPercentageOfGmail)}%`;
+    document.querySelector('.dashboard-card:nth-child(2) .circle').innerText = `${checkNaN(spamPercentageOfOutlook)}%`;
+    document.querySelector('.dashboard-card:nth-child(3) .circle').innerText = `${checkNaN(spamPercentageOfYahoo)}%`;
+    document.querySelector('.dashboard-card:nth-child(4) .circle').innerText = `${checkNaN(spamPercentageOfOthers)}%`;
 
 }
 
