@@ -123,11 +123,11 @@ function drawGmailMail(emailData) {
     let emailsHtml = '';
     if (emailData.emails && Array.isArray(emailData.emails)) {
         emailsHtml = emailData.emails.map((el, id) => `
-            <div class="email-detail ${el.folder.indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
+            <div class="email-detail ${el.folder.toUpperCase().indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
                 <div class="email-name">${el.name}</div>
                 <div class="email-from">${el.sender_email}</div>
                 <div class="email-subject">${el.subject}</div>
-                ${el.folder.indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
+                ${el.folder.toUpperCase().indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
             </div>
         `).join('');
     }
@@ -152,11 +152,11 @@ function drawOutlookMail(email) {
     let emailsHtml = '';
     if (emailData.emails && Array.isArray(emailData.emails)) {
         emailsHtml = emailData.emails.map((el, id) => `
-            <div class="email-detail ${el.folder.indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
+            <div class="email-detail ${el.folder.toUpperCase().indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
                 <div class="email-name">${el.name}</div>
                 <div class="email-from">${el.sender_email}</div>
                 <div class="email-subject">${el.subject}</div>
-                ${el.folder.indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
+                ${el.folder.toUpperCase().indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
             </div>
         `).join('');
     }
@@ -181,11 +181,11 @@ function drawYahooMail(email) {
     let emailsHtml = '';
     if (emailData.emails && Array.isArray(emailData.emails)) {
         emailsHtml = emailData.emails.map((el, id) => `
-            <div class="email-detail ${el.folder.indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
+            <div class="email-detail ${el.folder.toUpperCase().indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
                 <div class="email-name">${el.name}</div>
                 <div class="email-from">${el.sender_email}</div>
                 <div class="email-subject">${el.subject}</div>
-                ${el.folder.indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
+                ${el.folder.toUpperCase().indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
             </div>
         `).join('');
     }
@@ -210,11 +210,11 @@ function drawAolMail(email) {
     let emailsHtml = '';
     if (emailData.emails && Array.isArray(emailData.emails)) {
         emailsHtml = emailData.emails.map((el, id) => `
-            <div class="email-detail ${el.folder.indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
+            <div class="email-detail ${el.folder.toUpperCase().indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
                 <div class="email-name">${el.name}</div>
                 <div class="email-from">${el.sender_email}</div>
                 <div class="email-subject">${el.subject}</div>
-                ${el.folder.indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
+                ${el.folder.toUpperCase().indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
             </div>
         `).join('');
     }
@@ -309,7 +309,7 @@ function showLoadingIndicator(flag) {
 }
 
 function checkNaN(value) {
-    return isNaN(value) ? 0 : value;
+    return isNaN(value) ? 0 : parseInt(value);
 }
 
 function showNumberEmails(data) {
