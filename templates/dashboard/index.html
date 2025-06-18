@@ -45,7 +45,7 @@
         <div class="label">Others</div>
     </div>
 </div>
-<div class="filter-controls">
+{% comment %} <div class="filter-controls">
     <select id="dateFilter" class="date-filter">
         <option value="7" selected>Last 7 days</option>
         <option value="14">Last 2 weeks</option>
@@ -53,11 +53,11 @@
         <option value="all">All time (10 years)</option>
     </select>
     <div id="loading-indicator" style="display:none; margin-bottom:10px;">Loading...</div>
-</div>
+</div> {% endcomment %}
 <div class="mail-columns">
     <div class="mail-list">
         <div class="list-title">Google Email Accounts</div>
-        <div class="list-title-number" id="gmailCount"></div>
+        <div class="list-title-number" id="gmailCount">{{ num_gmail }} emails</div>
         
         <div class="mail-list-content" id="email-list-gmail">
             <!-- Email data will be loaded here -->
@@ -69,7 +69,7 @@
     </div>
     <div class="mail-list">
         <div class="list-title">Outlook / Hotmail Email Accounts</div>
-        <div class="list-title-number" id="outlookCount"></div>
+        <div class="list-title-number" id="outlookCount">{{ num_outlook }} emails</div>
         <div class="mail-list-content" id="email-list-outlook">
             <!-- Email data will be loaded here -->
             <div class="no-emails-message">
@@ -80,7 +80,7 @@
     </div>
     <div class="mail-list">
         <div class="list-title">At&t / Yahoo Email Accounts</div>
-        <div class="list-title-number" id="yahooCount"></div>
+        <div class="list-title-number" id="yahooCount">{{ num_yahoo }} emails</div>
         <div class="mail-list-content" id="email-list-yahoo">
             <!-- Email data will be loaded here -->
             <div class="no-emails-message">
@@ -91,7 +91,7 @@
     </div>
     <div class="mail-list">
         <div class="list-title">Others AOL Email Accounts</div>
-        <div class="list-title-number" id="othersCount"></div>
+        <div class="list-title-number" id="othersCount">{{ num_aol }} emails</div>
         <div class="mail-list-content" id="email-list-aol">
             <!-- Email data will be loaded here -->
             <div class="no-emails-message">
@@ -369,7 +369,7 @@ function clearEmailList() {
     document.getElementById('email-list-aol').innerHTML = '';
 }
 
-function updateEmailData(value) {
+{% comment %} function updateEmailData(value) {
     if (isPolling) return;
     isPolling = true;
     const loadingIndicator = document.getElementById('loading-indicator');
@@ -396,7 +396,7 @@ function updateEmailData(value) {
         isPolling = false;
         showLoadingIndicator(false);
     });
-}
+} {% endcomment %}
 
 // Search functionality
 document.getElementById('searchButton').addEventListener('click', function() {
@@ -412,6 +412,7 @@ document.getElementById('searchButton').addEventListener('click', function() {
         const emails = data.emails;
         clearEmailList();
         updateEmailList(emails);
+        showNumberEmails(data);
     })
     .catch(error => {
         console.error('Error searching emails:', error);
@@ -422,14 +423,14 @@ document.getElementById('searchButton').addEventListener('click', function() {
 });
 
 // Add event listener for date filter change
-document.getElementById('dateFilter').addEventListener('change', function() {
+{% comment %} document.getElementById('dateFilter').addEventListener('change', function() {
     console.log(this.value);
     updateEmailData(this.value);
-});
+}); {% endcomment %}
 
-// Initial load
+{% comment %} // Initial load
 var initial_date = document.getElementById('dateFilter').value;
-updateEmailData(initial_date);
+updateEmailData(initial_date); {% endcomment %}
 
 {% comment %} // Set up polling
 setInterval(updateEmailData, POLL_INTERVAL); {% endcomment %}

@@ -37,3 +37,13 @@ def group_emails_by_app_email(emails):
                 "emails": email_list[i*3:(i+1)*3]
             })
     return result;
+
+def get_num_accounts(accounts):
+    num_gmail = 0
+    num_outlook = 0
+    num_yahoo = 0
+    num_aol = 0
+    for acc in accounts:
+        if(acc.imap_host_name == 'imap.gmail.com'):
+            num_gmail += 1
+    return num_gmail, num_outlook, num_yahoo, num_aol
