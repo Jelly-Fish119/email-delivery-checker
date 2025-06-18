@@ -46,4 +46,30 @@ def get_num_accounts(accounts):
     for acc in accounts:
         if(acc.imap_host_name == 'imap.gmail.com'):
             num_gmail += 1
+        elif(acc.imap_host_name == 'imap-mail.outlook.com'):
+            num_outlook += 1
+        elif(acc.imap_host_name == 'imap.mail.yahoo.com'):
+            num_yahoo += 1
+        elif acc.imap_host_name == 'imap.aol.com':
+            num_aol += 1
     return num_gmail, num_outlook, num_yahoo, num_aol
+
+def group_emails_by_host(accounts):
+    result = [];
+    email_groups = {
+        'gmail': [],
+        'outlook': [],
+        'yahoo': [],
+        'aol': []
+    }
+    for acc in accounts:
+        host = acc.imap_host_name
+        if host == 'imap.gmail.com':
+            email_groups['gmail'].append(acc)
+        elif host == 'imap-mail.outlook.com':
+            email_groups['outlook'].append(acc)
+        elif host == 'imap.mail.yahoo.com':
+            email_groups['yahoo'].append(acc)
+        elif host == 'imap.aol.com':
+            email_groups['aol'].append(acc)
+    return email_groups

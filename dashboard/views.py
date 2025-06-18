@@ -5,7 +5,7 @@ from .mail_checker import insert_and_show_recent_emails
 from .models import EmailAccount, EmailMessage
 # from django.core.cache import cache
 from datetime import datetime, timedelta
-from .helper import group_emails_by_app_email, get_num_accounts
+from .helper import group_emails_by_app_email, get_num_accounts, group_emails_by_host
 
 # Create your views here.
 @login_required
@@ -18,12 +18,14 @@ def index(request):
     # For regular page load, just render the template
     accounts = EmailAccount.objects.all()
     num_gmail, num_outlook, num_yahoo, num_aol = get_num_accounts(accounts)
+    email_groups = group_emails_by_host(accounts)
     context = {
         'num_gmail': num_gmail,
         'num_outlook': num_outlook,
         'num_yahoo': num_yahoo,
         'num_aol': num_aol,
-        'total_accounts': num_gmail + num_outlook + num_yahoo + num_aol
+        'total_accounts': num_gmail + num_outlook + num_yahoo + num_aol,
+        'email_groups': email_groups
     }
     return render(request, 'dashboard/index.html', context)
 
