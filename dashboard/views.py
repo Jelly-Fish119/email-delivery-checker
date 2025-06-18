@@ -5,6 +5,7 @@ from .mail_checker import insert_and_show_recent_emails
 from .models import EmailAccount, EmailMessage
 # from django.core.cache import cache
 from datetime import datetime, timedelta
+from .helper import group_emails_by_app_email
 
 # Create your views here.
 @login_required
@@ -97,15 +98,17 @@ def get_emails(request):
             for email in emails:
                 check_spam(email.folder, email.email_account.imap_host_name, num_spam, num_inbox)
                 email_dict = {
+                    'app_mail': email.email_account.email_address,
                     'subject': email.subject,
                     'from': email.sender,
                     'date': email.date.isoformat(),
                     'body': email.body,
                     'folder': email.folder,
-                    'host': email.email_account.imap_host_name
+                    'host': email.email_account.imap_host_name,
+                    'name': email.name,
+                    'sender_email': email.sender_email
                 }
                 email_list.append(email_dict)
-            
             all_emails.extend(email_list)
             
             if not emails:
@@ -115,7 +118,7 @@ def get_emails(request):
         except Exception as e:
             print('error', e)
             continue
-            
+    all_emails = group_emails_by_app_email(all_emails)
     return JsonResponse({
         'all_emails': all_emails,
         'num_gmail': num_gmail,
@@ -127,6 +130,7 @@ def get_emails(request):
         'num_inbox': num_inbox
     }, safe=False)
 
+@login_required
 def search_emails(request):
     """
     View to search emails
@@ -141,18 +145,22 @@ def search_emails(request):
         # Convert QuerySet to list of dictionaries
         email_list = []
         for email in emails:
-            email_dict = {
-                'subject': email.subject,
-                'from': email.sender,
-                'date': email.date.isoformat(),
-                'body': email.body,
-                'folder': email.folder,
-                'name': email.name,
-                'sender_email': email.sender_email,
-                'host': email.email_account.imap_host_name
-            }
-            email_list.append(email_dict)
-            
+            if(email.email_account.user == request.user):
+                email_dict = {
+                    'app_mail': email.email_account.email_address,
+                    'subject': email.subject,
+                    'from': email.sender,
+                    'date': email.date.isoformat(),
+                    'body': email.body,
+                    'folder': email.folder,
+                    'name': email.name,
+                    'sender_email': email.sender_email,
+                    'host': email.email_account.imap_host_name
+                }
+                email_list.append(email_dict)
+            else:
+                continue
+        email_list = group_emails_by_app_email(email_list)
         return JsonResponse({
             'emails': email_list
         })

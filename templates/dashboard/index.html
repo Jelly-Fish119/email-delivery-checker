@@ -100,9 +100,9 @@
              <div id="loading-indicator-aol" style="display: none; margin: 5px">Loading...</div>
         </div>
     </div>
-    <div class="email-details" id="email-details">
+    {% comment %} <div class="email-details" id="email-details">
         <!-- Selected email details will be shown here -->
-    </div>
+    </div> {% endcomment %}
 </div>
 
 <script>
@@ -115,103 +115,124 @@ function formatDate(dateString) {
     return date.toLocaleString();
 }
 
-function updateDashboardCounts(data) {
-    let gmailCount = 0;
-    let outlookCount = 0;
-    let yahooCount = 0;
-    let othersCount = 0;
-
-    data.forEach(account => {
-        if (account.folders) {
-            account.folders.forEach(folder => {
-                if (folder.emails) {
-                    const count = folder.emails.length;
-                    if (account.host.includes('gmail')) {
-                        gmailCount += count;
-                    } else if (account.host.includes('outlook') || account.host.includes('hotmail')) {
-                        outlookCount += count;
-                    } else if (account.host.includes('yahoo')) {
-                        yahooCount += count;
-                    } else {
-                        othersCount += count;
-                    }
-                }
-            });
-        }
-    });
-
-    document.getElementById('gmailCount').textContent = gmailCount;
-    document.getElementById('outlookCount').textContent = outlookCount;
-    document.getElementById('yahooCount').textContent = yahooCount;
-    document.getElementById('othersCount').textContent = othersCount;
-}
-
-function drawGmailMail(email) {
+function drawGmailMail(emailData) {
     const emailDiv = document.createElement('div');
-    if(email.folder.indexOf('SPAM') > -1) {
-        emailDiv.style.backgroundColor = '#f8d7da';
-    } else {
-        emailDiv.style.backgroundColor = 'white';
-    }
     emailDiv.className = 'email-item';
+
+    // Build the emails HTML
+    let emailsHtml = '';
+    if (emailData.emails && Array.isArray(emailData.emails)) {
+        emailsHtml = emailData.emails.map((el, id) => `
+            <div class="email-detail ${el.folder.indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
+                <div class="email-name">${el.name}</div>
+                <div class="email-from">${el.sender_email}</div>
+                <div class="email-subject">${el.subject}</div>
+                ${el.folder.indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
+            </div>
+        `).join('');
+    }
+
     emailDiv.innerHTML = `
-        <div class="email-icon">
+        <div class="email-app-mail">
             <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico" alt="gmail">
+            <div class="email-app-mail-text">${emailData.app_email}</div>
         </div>
-        <div class="email-subject">${email.subject}</div>
-        <div class="email-from">From: ${email.from}</div>
-        <div class="email-date">${formatDate(email.date)}</div>
+        <div class="emails">
+            ${emailsHtml}
+        </div>
     `;
-    emailDiv.onclick = () => showEmailDetails(email);
     return emailDiv;
 }
 
 function drawOutlookMail(email) {
     const emailDiv = document.createElement('div');
     emailDiv.className = 'email-item';
+
+    // Build the emails HTML
+    let emailsHtml = '';
+    if (emailData.emails && Array.isArray(emailData.emails)) {
+        emailsHtml = emailData.emails.map((el, id) => `
+            <div class="email-detail ${el.folder.indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
+                <div class="email-name">${el.name}</div>
+                <div class="email-from">${el.sender_email}</div>
+                <div class="email-subject">${el.subject}</div>
+                ${el.folder.indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
+            </div>
+        `).join('');
+    }
+
     emailDiv.innerHTML = `
-        <div class="email-icon">
+        <div class="email-app-mail">
             <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/outlook.ico" alt="outlook">
+            <div class="email-app-mail-text">${emailData.app_email}</div>
         </div>
-        <div class="email-subject">${email.subject}</div>
-        <div class="email-from">From: ${email.from}</div>
-        <div class="email-date">${formatDate(email.date)}</div>
+        <div class="emails">
+            ${emailsHtml}
+        </div>
     `;
-    emailDiv.onclick = () => showEmailDetails(email);
     return emailDiv;
 }
 
 function drawYahooMail(email) {
     const emailDiv = document.createElement('div');
     emailDiv.className = 'email-item';
+
+    // Build the emails HTML
+    let emailsHtml = '';
+    if (emailData.emails && Array.isArray(emailData.emails)) {
+        emailsHtml = emailData.emails.map((el, id) => `
+            <div class="email-detail ${el.folder.indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
+                <div class="email-name">${el.name}</div>
+                <div class="email-from">${el.sender_email}</div>
+                <div class="email-subject">${el.subject}</div>
+                ${el.folder.indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
+            </div>
+        `).join('');
+    }
+
     emailDiv.innerHTML = `
-        <div class="email-icon">
+        <div class="email-app-mail">
             <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/yahoo.ico" alt="yahoo">
+            <div class="email-app-mail-text">${emailData.app_email}</div>
         </div>
-        <div class="email-subject">${email.subject}</div>
-        <div class="email-from">From: ${email.from}</div>
-        <div class="email-date">${formatDate(email.date)}</div>
+        <div class="emails">
+            ${emailsHtml}
+        </div>
     `;
-    emailDiv.onclick = () => showEmailDetails(email);
     return emailDiv;
 }
 
 function drawAolMail(email) {
     const emailDiv = document.createElement('div');
     emailDiv.className = 'email-item';
+
+    // Build the emails HTML
+    let emailsHtml = '';
+    if (emailData.emails && Array.isArray(emailData.emails)) {
+        emailsHtml = emailData.emails.map((el, id) => `
+            <div class="email-detail ${el.folder.indexOf('SPAM') > -1 ? 'email-spam' : 'email-inbox'}">
+                <div class="email-name">${el.name}</div>
+                <div class="email-from">${el.sender_email}</div>
+                <div class="email-subject">${el.subject}</div>
+                ${el.folder.indexOf('SPAM') > -1 ? `<div class="email-folder-text spam">Spam</div>` : '<div class="email-folder-text inbox">Inbox</div>'}
+            </div>
+        `).join('');
+    }
+
     emailDiv.innerHTML = `
-        <div class="email-icon">
+        <div class="email-app-mail">
             <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/aol.ico" alt="aol">
+            <div class="email-app-mail-text">${emailData.app_email}</div>
         </div>
-        <div class="email-subject">${email.subject}</div>
-        <div class="email-from">From: ${email.from}</div>
-        <div class="email-date">${formatDate(email.date)}</div>
+        <div class="emails">
+            ${emailsHtml}
+        </div>
     `;
-    emailDiv.onclick = () => showEmailDetails(email);
     return emailDiv;
 }
 
 function updateEmailList(data) {
+    console.log('data', data);
     const emailListGmail = document.getElementById('email-list-gmail');
     const emailListOutlook = document.getElementById('email-list-outlook');
     const emailListYahoo = document.getElementById('email-list-yahoo');
@@ -220,6 +241,7 @@ function updateEmailList(data) {
     data.forEach(email => {
         if (email.host.includes('gmail')) {
             const emailDiv = drawGmailMail(email);
+            console.log('emailDiv', emailDiv);
             emailListGmail.appendChild(emailDiv);
         } else if (email.host.includes('outlook') || email.host.includes('hotmail')) {
             const emailDiv = drawOutlookMail(email);
@@ -336,18 +358,6 @@ function showNoEmails(numInbox, numSpam) {
     }
 }
 
-function filterEmailsByDate(data, days) {
-    if (days === 'all') return data;
-    
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
-    
-    return data.filter(email => {
-        const emailDate = new Date(email.date);
-        return emailDate >= cutoffDate;
-    });
-}
-
 function clearEmailList() {
     document.getElementById('email-list-gmail').innerHTML = '';
     document.getElementById('email-list-outlook').innerHTML = '';
@@ -369,14 +379,10 @@ function updateEmailData(value) {
     .then(response => response.json())
     .then(data => {
         clearEmailList();
-        const selectedDays = document.getElementById('dateFilter').value;
-        const filteredData = filterEmailsByDate(data.all_emails, selectedDays);
-        updateDashboardCounts(filteredData);
-        updateEmailList(filteredData);
         showNumberEmails(data);
         showNoEmails(data.num_inbox, data.num_spam);
         lastUpdateTime = new Date();
-
+        updateEmailList(data.all_emails);
     })
     .catch(error => {
         console.error('Error fetching email data:', error);
@@ -452,17 +458,6 @@ style.textContent = `
         background: #e9ecef;
     }
 
-    .email-icon {
-        width: 20px;
-        height: 20px;
-    }
-
-    .email-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-    }
-
     #searchInput:focus {
         outline: none;
         border: 3px solid #007bff;
@@ -472,34 +467,127 @@ style.textContent = `
         outline: none;
         border: 3px solid #007bff;
     }
-    
+
+    .emails {
+        height: 100%;
+    }
+
+    .email-app-mail {
+        width: 100px;
+        height: 60px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #666;
+        text-align: center;
+        margin-left: 10px;
+    }
+
+    .email-app-mail img {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+        margin-bottom: 10px;
+    }
+
+    .email-app-mail-text {
+        font-size: 12px;
+        font-weight: bold;
+        color: #666;
+        text-align: center;
+        overflow-wrap: break-word;
+    }
+
+    .email-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .email-spam {
+        background-color:rgb(228, 120, 152);
+    }
+
+    .email-inbox {
+        background-color:rgb(177, 236, 191);
+    }
+
+    .email-folder-text {
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        text-align: center;
+        padding: 2px;
+        border-radius: 5px;
+        display: inline;
+    }
+
+    .email-folder-text.spam {
+        background-color:rgb(235, 47, 14);
+    }
+
+    .email-folder-text.inbox {
+        background-color:rgb(22, 95, 0);
+    }
+
+    .email-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
     .email-item {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-        cursor: pointer;
         display: flex;
+        justify-content: start;
+        height: 140px;
+        border: 1px solid #eee;
+        cursor: pointer;
         align-items: center;
         gap: 10px;
+        background-color: #e9e9e9;
     }
-    
-    .email-item:hover {
-        background: #f8f9fa;
+
+    .email-item .emails {
+        display: flex;
+        justify-content: start;
+        width: 85%;
+        gap: 2px;
     }
-    
-    .email-subject {
+
+    .email-item .emails .email-detail {
+        box-sizing: border-box;
+        font-size: 12px;
+        width: 130px;
+        border: 2px solid rgba(85, 85, 81, 0.2);
+        padding: 10px 5px 0 5px;
+        height: 100%;
+    }
+
+    .email-item .emails .email-detail:hover {
+        background:rgba(109, 151, 192, 0.8);
+        cursor: pointer;
+    }
+
+    .email-name {
+        font-size: 14px;
         font-weight: bold;
-        width: 30%;
+        line-height: 1.5;
+        overflow: hidden;
+        height: 35px;
+        align-content: center;
+    }
+    
+    .email-from {
+        font-size: 0.9em;
+        color: #666;
+        overflow-wrap: break-word;
+        height: 30px;
+        align-content: center;
+    }
+
+    .email-subject {
         height: 40px;
+        align-content: center;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        display: flex;
-        align-items: center;
-    }
-    
-    .email-from, .email-date {
-        font-size: 0.9em;
-        color: #666;
     }
     
     .email-details {
@@ -523,7 +611,7 @@ style.textContent = `
         white-space: pre-wrap;
         overflow-wrap:anywhere;
     }
-
+    
     .mail-list .list-title {
         font-size: 24px;
         font-weight: 600;
@@ -549,7 +637,6 @@ style.textContent = `
         gap: 10px;
         padding-left: 30px;
         margin-bottom: 10px;
-        width: 100%;
     }
     
     .date-filter {

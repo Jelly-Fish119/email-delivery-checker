@@ -11,7 +11,7 @@
             font-family: 'Roboto', Arial, sans-serif;
             background: #e3f0fa;
             margin: 0;
-            padding: 0;
+            padding: 0 15px 0 15px;
         }
         .navbar {
             background: #2c3e50;
@@ -119,12 +119,13 @@
         }
         .mail-columns {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             margin: 0 0 40px 0;
+            gap: 10px;
         }
         .mail-list {
             padding: 10px 0;
-            width: 340px;
+            width: 25%;
             min-height: 500px;
         }
         .mail-list .list-title {
@@ -139,10 +140,11 @@
             text-align: center;
         }
         .mail-list-content {
-            background: #fff;
             border-radius: 10px;
             box-shadow: 0 2px 8px rgba(44,62,80,0.08);
-            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
         .mail-item {
             display: flex;
