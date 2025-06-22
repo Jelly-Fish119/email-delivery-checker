@@ -165,9 +165,9 @@ def search_emails(request):
         }
         keyword = request.GET.get('keyword')
         if(str(keyword).find('@') > -1):
-            emails = EmailMessage.objects.filter(sender_email__icontains=keyword)
+            emails = EmailMessage.objects.filter(sender_email__icontains=keyword).order_by('-date')
         else:
-            emails = EmailMessage.objects.filter(name__icontains=keyword)
+            emails = EmailMessage.objects.filter(name__icontains=keyword).order_by('-date')
         accounts = EmailAccount.objects.all()
         
         for acc in accounts:

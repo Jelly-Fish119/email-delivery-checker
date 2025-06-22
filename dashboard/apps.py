@@ -26,7 +26,7 @@ class DashboardConfig(AppConfig):
             except Exception as e:
                 print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Error in email fetch cycle: {e}")
             
-            # Wait for 1 minute second before next cycle
+            # Wait for 10 seconds second before next cycle
             time.sleep(20)
 
 
