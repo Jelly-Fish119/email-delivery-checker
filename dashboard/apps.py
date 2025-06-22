@@ -56,7 +56,7 @@ def fetch_and_insert_all_emails_background():
     from .models import EmailAccount
     from .mail_checker import insert_to_db
     accounts = EmailAccount.objects.all()
-    all_emails = get_all_accounts_emails(accounts, since_days=None, since_hours=None, since_mins=1)
+    all_emails = get_all_accounts_emails(accounts, since_days=None, since_hours=None, since_mins=10)
     for email_data in all_emails:
         try:
             insert_to_db(email_data, email_data['app_mail'])
