@@ -27,7 +27,7 @@ class DashboardConfig(AppConfig):
                 print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Error in email fetch cycle: {e}")
             
             # Wait for 10 seconds second before next cycle
-            time.sleep(20)
+            time.sleep(10)
 
 
 def get_all_accounts_emails(accounts, since_days=3650, since_hours=None, since_mins=None):
