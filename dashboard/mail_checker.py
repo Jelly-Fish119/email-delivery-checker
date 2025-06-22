@@ -1,82 +1,69 @@
-# === STEP 1: Add all your email accounts here ===
-# accounts = [
-#     {"email": "traviscaldw@gmail.com", "password": "jlgr dpgu cybi xlmj", "host": "imap.gmail.com"},
-#     {"email": "amandarober15@gmail.com", "password": "jews zkib eckz pmlp", "host": "imap.gmail.com"},
-#     {"email": "larrywright1644@gmail.com", "password": "rdhy yxob pxfb nyvv", "host": "imap.gmail.com"},
-#     {"email": "elaineriley1970@gmail.com", "password": "fzeo krhz pmko wlts", "host": "imap.gmail.com"},
-#     {"email": "johannalove2012@gmail.com", "password": "yoix vqit zkdn ibrb", "host": "imap.gmail.com"},
-#     {"email": "cdgnxdfh6@hotmail.com", "password": "etre zrxw fmkc poin", "host": "imap-mail.outlook.com"},
-#     {"email": "johannalove2012@yahoo.com", "password": "yoix vqit zkdn ibrb", "host": "imap.mail.yahoo.com"},
-#     {"email": "johannalove2012@aol.com", "password": "yoix vqit zkdn ibrb", "host": "imap.aol.com"},
-# ]
-
-# === STEP 2: Function to monitor one email account ===
 import imaplib
+from imapclient import IMAPClient
 from email import message_from_bytes, utils
 from email.header import decode_header
 from datetime import datetime, timedelta
 from .models import EmailMessage, EmailAccount
 from email.utils import parsedate_to_datetime
 import pytz
+import ssl
 
-def get_email_content(msg):
-    """Extract email content from message"""
-    if msg.is_multipart():
-        for part in msg.walk():
-            if part.get_content_type() == "text/plain":
+def get_email_content(email_message):
+    body = ""
+    if email_message.is_multipart():
+        for part in email_message.walk():
+            content_type = part.get_content_type()
+            content_disposition = str(part.get("Content-Disposition"))
+            if content_type == "text/plain" and "attachment" not in content_disposition:
                 try:
-                    return part.get_payload(decode=True).decode()
+                    body = part.get_payload(decode=True).decode(errors='ignore')
+                    break
                 except:
-                    return "Unable to decode content"
+                    continue
     else:
         try:
-            return msg.get_payload(decode=True).decode()
+            body = email_message.get_payload(decode=True).decode(errors='ignore')
         except:
-            return "Unable to decode content"
-    return ""
+            pass
+    return body
 
 def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'], since_days=3650, since_mins=None, since_hours=None):
-    from datetime import datetime, timedelta
     all_emails = []
     try:
-        mail = imaplib.IMAP4_SSL(host)
-        mail.login(email, password)
-        since_date = None
-        if since_days:
-            since_date = (datetime.now() - timedelta(days=since_days)).strftime("%d-%b-%Y")
-        elif since_mins:
-            print('-'*40, 'minute')
-            since_date = (datetime.now() - timedelta(minutes=since_mins)).strftime("%d-%b-%Y")
-        elif since_hours:
-            since_date = (datetime.now() - timedelta(hours=since_hours)).strftime("%d-%b-%Y")
-        
+        context = ssl.create_default_context()
+        with IMAPClient(host, ssl=True, ssl_context=context) as client:
+            client.login(email, password)
+            print(email, '-'*30, '\n')
 
-        for folder in folders:
-            mail.select(folder)
-            print('folder', folder)
-            status, data = mail.uid('search', None, f'(SINCE {since_date})')
-            if status != 'OK':
-                continue
+            since_date = None
+            if since_days:
+                since_date = datetime.now() - timedelta(days=since_days)
+            elif since_mins:
+                since_date = datetime.now() - timedelta(minutes=since_mins)
+            elif since_hours:
+                since_date = datetime.now() - timedelta(hours=since_hours)
+            else:
+                since_date = datetime.now() - timedelta(days=3650)
 
-            uids = data[0].split()
-            if not uids:
-                continue
-
-            uids_str = b','.join(uids)
-            try:    
-                result, fetch_data = mail.uid('fetch', uids_str, '(RFC822)')
-                if result != 'OK':
+            for folder in folders:
+                try:
+                    client.select_folder(folder)
+                    print('folder', folder)
+                except Exception as e:
+                    print(f"Failed to select folder {folder}: {e}")
                     continue
-            except Exception as e:
-                print('error', e)
-                continue
 
-            for i in range(0, len(fetch_data), 2):
-                if isinstance(fetch_data[i], tuple):
-                    raw_email = fetch_data[i][1]
+                messages = client.search(["SINCE", since_date])
+                if not messages:
+                    continue
+
+                response = client.fetch(messages, ["RFC822"])
+                for msgid, data in response.items():
+                    raw_email = data[b'RFC822']
                     try:
                         email_message = message_from_bytes(raw_email)
-                    except:
+                    except Exception as e:
+                        print("Failed to parse email:", e)
                         continue
 
                     subject = decode_header(email_message.get('Subject'))[0][0]
@@ -109,7 +96,8 @@ def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'],
     except Exception as e:
         print('error', e)
         return None
-    
+
+
 def check_folders(host):
     if(host == 'imap.gmail.com'):
         return ['INBOX', '[Gmail]/Spam']
