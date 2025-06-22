@@ -1,132 +1,56 @@
-from celery import shared_task
-from .models import EmailAccount
-from .mail_checker import monitor_email
-import json
-from django.core.cache import cache
-from celery.utils.log import get_task_logger
-from datetime import datetime
-import time
+# from celery import shared_task
+# from django.core.cache import cache
+# from celery.utils.log import get_task_logger
+# from datetime import datetime
+# import time
+# from .models import EmailAccount
+# from .mail_checker import get_emails_checker, insert_to_db, check_folders
 
-logger = get_task_logger(__name__)
+# logger = get_task_logger(__name__)
 
-@shared_task(bind=True, name='monitor_emails')
-def monitor_emails(self):
-    """
-    Celery task to monitor emails for all accounts
-    """
-    task_id = self.request.id
-    logger.info(f"Starting email monitoring task {task_id}")
-    
-    try:
-        # Get all email accounts
-        accounts = EmailAccount.objects.all()
-        results = []
-        
-        # Process each account
-        for account in accounts:
-            try:
-                logger.info(f"Monitoring emails for account: {account.email_user_name}")
-                # Monitor emails for this account and get results
-                monitoring_result = monitor_email(
-                    account.email_user_name,
-                    account.password,
-                    account.imap_host_name
-                )
+# @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+# def fetch_and_insert_all_emails_task(self):
+#     logger.info('running the fetch_and_insert_all_emails_task')
+#     try:
+#         accounts = EmailAccount.objects.all()
+#         for account in accounts:
+#             logger.info(f'Checking account: {account.email_address}')
+#             try:
+#                 folders = check_folders(account.imap_host_name)
+#                 logger.info(f'Folders: {folders}')
+#                 emails = get_emails_checker(
+#                     account.email_address,
+#                     account.password,
+#                     account.imap_host_name,
+#                     folders,
+#                     since_days=None,
+#                     since_mins=1,
+#                     since_hours=None
+#                 )
                 
-                # Store the results
-                results.append({
-                    'email': account.email_user_name,
-                    'status': 'success',
-                    'monitoring_result': monitoring_result
-                })
-                
-                # Cache individual account results
-                cache_key = f'email_monitoring_{account.email_user_name}'
-                cache.set(cache_key, monitoring_result, timeout=3600)
-                
-            except Exception as e:
-                logger.error(f"Error monitoring account {account.email_user_name}: {str(e)}")
-                results.append({
-                    'email': account.email_user_name,
-                    'status': 'error',
-                    'error': str(e)
-                })
-        
-        # Store the overall results in cache
-        cache.set('email_monitoring_status', {
-            'task_id': task_id,
-            'status': 'success',
-            'results': results,
-            'timestamp': datetime.now().isoformat()
-        }, timeout=3600)
-        
-        logger.info(f"Completed email monitoring task {task_id}")
-        return results
-    except Exception as e:
-        logger.error(f"Error in email monitoring task {task_id}: {str(e)}")
-        cache.set('email_monitoring_status', {
-            'task_id': task_id,
-            'status': 'error',
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
-        }, timeout=3600)
-        raise
-
-@shared_task(bind=True, name='get_email_data', max_retries=3)
-def get_email_data(self):
-    """
-    Celery task to get email data for all accounts
-    """
-    try:
-        # Try to get data from cache first
-        cached_data = cache.get('email_monitoring_status')
-        if cached_data:
-            logger.info("Retrieved data from cache")
-            return cached_data
-
-        # If no cached data, get fresh data
-        accounts = EmailAccount.objects.all()
-        results = []
-        
-        for account in accounts:
-            try:
-                logger.info(f"Monitoring emails for account: {account.email_user_name}")
-                monitoring_result = monitor_email(
-                    account.email_user_name,
-                    account.password,
-                    account.imap_host_name
-                )
-                
-                results.append({
-                    'email': account.email_user_name,
-                    'status': 'success',
-                    'monitoring_result': monitoring_result
-                })
-                
-                # Cache individual account results
-                cache_key = f'email_monitoring_{account.email_user_name}'
-                cache.set(cache_key, monitoring_result, timeout=3600)
-                
-            except Exception as e:
-                logger.error(f"Error monitoring account {account.email_user_name}: {str(e)}")
-                results.append({
-                    'email': account.email_user_name,
-                    'status': 'error',
-                    'error': str(e)
-                })
-        
-        # Store the overall results in cache
-        data = {
-            'status': 'success',
-            'results': results,
-            'timestamp': datetime.now().isoformat()
-        }
-        cache.set('email_monitoring_status', data, timeout=3600)
-        
-        return data
-        
-    except Exception as e:
-        logger.error(f"Error in get_email_data task: {str(e)}")
-        # Retry the task with exponential backoff
-        retry_in = (2 ** self.request.retries) * 5  # 5, 10, 20 seconds
-        self.retry(exc=e, countdown=retry_in) 
+#                 if emails is None or len(emails) == 0:
+#                     logger.warning(f'No emails returned for account: {account.email_address}')
+#                     continue
+                    
+#                 logger.info(f"Total emails fetched: {len(emails)}")
+#                 for i, email_data in enumerate(emails):
+#                     logger.info(f"Email {i}: {email_data}")
+#                     try:
+#                         if not email_data or not isinstance(email_data, dict):
+#                             logger.info(f"Skipping invalid email_data: {email_data}")
+#                             continue
+#                         insert_to_db(email_data, account.email_address)
+#                     except Exception as e:
+#                         logger.error(f'Error during insert_to_db: {e}')
+#                         continue
+#                 logger.info(f'done for account {account.email_address}')
+#             except Exception as e:
+#                 logger.error(f'Error processing account {account.email_address}: {e}')
+#                 continue
+#         return 'done'
+#     except Exception as e:
+#         import traceback
+#         logger.error('Unhandled error:', e)
+#         logger.error(traceback.format_exc())
+#         # Retry the task if it fails
+#         raise self.retry(exc=e, countdown=60)

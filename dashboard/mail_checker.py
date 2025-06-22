@@ -35,14 +35,21 @@ def get_email_content(msg):
             return "Unable to decode content"
     return ""
 
-def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'], since_days=7):
+def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'], since_days=3650, since_mins=None, since_hours=None):
     from datetime import datetime, timedelta
     all_emails = []
     try:
         mail = imaplib.IMAP4_SSL(host)
         mail.login(email, password)
-
-        since_date = (datetime.now() - timedelta(days=since_days)).strftime("%d-%b-%Y")
+        since_date = None
+        if since_days:
+            since_date = (datetime.now() - timedelta(days=since_days)).strftime("%d-%b-%Y")
+        elif since_mins:
+            print('-'*40, 'minute')
+            since_date = (datetime.now() - timedelta(minutes=since_mins)).strftime("%d-%b-%Y")
+        elif since_hours:
+            since_date = (datetime.now() - timedelta(hours=since_hours)).strftime("%d-%b-%Y")
+        
 
         for folder in folders:
             mail.select(folder)

@@ -80,15 +80,15 @@ ROOT_URLCONF = 'email_checker_pro.urls'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-     'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': 'email_checker_db',
-    #     'USER': 'postgres',
-    #     'PASSWORD': '123456789',  # Change this to your PostgreSQL password
-    #     'HOST': 'localhost',
-    #     'PORT': '5432',
-    # },
+    #  'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'email_checker_db',
+        'USER': 'postgres',
+        'PASSWORD': '123456789',  # Change this to your PostgreSQL password
+        'HOST': 'localhost',
+        'PORT': '5432',
+    },
     # 'default': {
     #     'ENGINE': 'django.db.backends.sqlite3',
     #     'NAME': 'db.sqlite3',
@@ -157,3 +157,31 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 print("DEBUG:", DEBUG)
 print("ALLOWED_HOSTS:", ALLOWED_HOSTS)
+
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_TIMEZONE = 'UTC'
+# CELERY_ENABLE_UTC = True
+
+# CELERY_TASK_ROUTES = {
+#     'dashboard.tasks.*': {'queue': 'default'},
+# }
+
+# CELERY_TASK_DEFAULT_QUEUE = 'default'
+# CELERY_TASK_DEFAULT_EXCHANGE = 'default'
+# CELERY_TASK_DEFAULT_ROUTING_KEY = 'default'
+
+# CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
+
+# from celery.schedules import crontab
+
+# CELERY_BEAT_SCHEDULE = {
+#     'fetch-emails-every-minute': {
+#         'task': 'dashboard.tasks.fetch_and_insert_all_emails_task',
+#         'schedule': crontab(),  # every minute
+#     },
+# }
