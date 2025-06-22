@@ -1,31 +1,28 @@
-import imaplib
+import ssl
 from imapclient import IMAPClient
-from email import message_from_bytes, utils
+from email import message_from_bytes
 from email.header import decode_header
+from email.utils import parseaddr, parsedate_to_datetime
 from datetime import datetime, timedelta
 from .models import EmailMessage, EmailAccount
-from email.utils import parsedate_to_datetime
-import pytz
-import ssl
+
+def decode_mime_words(header):
+    decoded = decode_header(header or '')
+    return ''.join(
+        part.decode(enc or 'utf-8', errors='ignore') if isinstance(part, bytes) else part
+        for part, enc in decoded
+    )
+
 
 def get_email_content(email_message):
-    body = ""
-    if email_message.is_multipart():
-        for part in email_message.walk():
-            content_type = part.get_content_type()
-            content_disposition = str(part.get("Content-Disposition"))
-            if content_type == "text/plain" and "attachment" not in content_disposition:
-                try:
-                    body = part.get_payload(decode=True).decode(errors='ignore')
-                    break
-                except:
-                    continue
-    else:
-        try:
-            body = email_message.get_payload(decode=True).decode(errors='ignore')
-        except:
-            pass
-    return body
+    # Return plain text or HTML fallback
+    for part in email_message.walk():
+        content_type = part.get_content_type()
+        if content_type == "text/plain" and part.get_payload(decode=True):
+            return part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='ignore')
+        elif content_type == "text/html" and part.get_payload(decode=True):
+            return part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='ignore')
+    return ""
 
 def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'], since_days=3650, since_mins=None, since_hours=None):
     all_emails = []
@@ -33,71 +30,68 @@ def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'],
         context = ssl.create_default_context()
         with IMAPClient(host, ssl=True, ssl_context=context) as client:
             client.login(email, password)
-            print(email, '-'*30, '\n')
+            print(email, '-' * 30)
 
-            since_date = None
-            if since_days:
-                since_date = datetime.now() - timedelta(days=since_days)
-            elif since_mins:
+            # Define cutoff datetime
+            if since_mins:
                 since_date = datetime.now() - timedelta(minutes=since_mins)
             elif since_hours:
                 since_date = datetime.now() - timedelta(hours=since_hours)
             else:
-                since_date = datetime.now() - timedelta(days=3650)
+                since_date = datetime.now() - timedelta(days=since_days)
+
+            since_for_search = since_date.date()  # IMAP only uses date
 
             for folder in folders:
                 try:
                     client.select_folder(folder)
-                    print('folder', folder)
+                    print('📂 Folder:', folder)
                 except Exception as e:
-                    print(f"Failed to select folder {folder}: {e}")
+                    print(f"⚠️ Failed to select folder {folder}: {e}")
                     continue
 
-                messages = client.search(["SINCE", since_date])
+                messages = client.search(["SINCE", since_for_search])
                 if not messages:
                     continue
 
-                response = client.fetch(messages, ["RFC822"])
+                response = client.fetch(messages, ["BODY.PEEK[HEADER]"])
                 for msgid, data in response.items():
-                    raw_email = data[b'RFC822']
+                    raw_headers = data[b'BODY[HEADER]']
                     try:
-                        email_message = message_from_bytes(raw_email)
+                        msg = message_from_bytes(raw_headers)
                     except Exception as e:
-                        print("Failed to parse email:", e)
+                        print(f"❌ Failed to parse email: {e}")
                         continue
 
-                    subject = decode_header(email_message.get('Subject'))[0][0]
-                    if isinstance(subject, bytes):
-                        subject = subject.decode(errors='ignore')
+                    try:
+                        email_date = parsedate_to_datetime(msg.get("Date"))
+                        if email_date and email_date < since_date:
+                            continue  # Skip older than target datetime
+                    except:
+                        continue
 
-                    from_addr = decode_header(email_message.get('From'))[0][0]
-                    if isinstance(from_addr, bytes):
-                        from_addr = from_addr.decode(errors='ignore')
-
-                    content = get_email_content(email_message)
-                    name, sender_email = utils.parseaddr(from_addr)
-                    name, encoding = decode_header(name)[0]
-                    if isinstance(name, bytes):
-                        name = name.decode(encoding or 'utf-8', errors='ignore')
+                    subject = decode_mime_words(msg.get("Subject"))
+                    from_header = msg.get("From", "")
+                    from_full = decode_mime_words(from_header)
+                    name, sender_email = parseaddr(from_full)
 
                     email_data = {
-                        'subject': str(subject),
-                        'from': str(from_addr),
-                        'date': str(email_message.get('Date')),
-                        'body': str(content),
+                        'subject': subject,
+                        'from': from_full,
+                        'date': str(email_date),
+                        'body': "",  # body can be fetched in second pass or omitted
                         'folder': folder,
                         'host': host,
                         'name': name,
-                        'sender_email': sender_email
+                        'sender_email': sender_email,
                     }
                     all_emails.append(email_data)
 
         return all_emails
+
     except Exception as e:
-        print('error', e)
+        print('❌ General error:', e)
         return None
-
-
 def check_folders(host):
     if(host == 'imap.gmail.com'):
         return ['INBOX', '[Gmail]/Spam']
