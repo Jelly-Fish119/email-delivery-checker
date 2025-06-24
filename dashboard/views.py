@@ -6,13 +6,20 @@ from .models import EmailAccount, EmailMessage
 # from django.core.cache import cache
 from datetime import datetime, timedelta
 from .helper import group_emails_by_app_email, get_num_accounts, group_emails_by_host
-
+from .mail_checker import start_realtime_listeners
+import threading
 # Create your views here.
+_listener_started = False
+_listener_lock = threading.Lock()
+
 @login_required
 def index(request):
-    """
-    View for the dashboard index page
-    """
+    global _listener_started
+    with _listener_lock:
+        if not _listener_started:
+            threading.Thread(target=start_realtime_listeners, daemon=True).start()
+            _listener_started = True
+
     if not request.user.is_authenticated:
         return redirect('accounts:login_page')
     # For regular page load, just render the template
