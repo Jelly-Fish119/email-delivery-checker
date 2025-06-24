@@ -80,15 +80,15 @@ ROOT_URLCONF = 'email_checker_pro.urls'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': 'email_checker_db',
-    #     'USER': 'postgres',
-    #     'PASSWORD': '123456789',  # Change this to your PostgreSQL password
-    #     'HOST': 'localhost',
-    #     'PORT': '5432',
-    # },
+    # 'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'email_checker_db',
+        'USER': 'postgres',
+        'PASSWORD': '123456789',  # Change this to your PostgreSQL password
+        'HOST': 'localhost',
+        'PORT': '5432',
+    },
     # 'default': {
     #     'ENGINE': 'django.db.backends.sqlite3',
     #     'NAME': 'db.sqlite3',

@@ -1,11 +1,21 @@
 import ssl
 from imapclient import IMAPClient
+import socket
+from imapclient.exceptions import IMAPClientError
 from email import message_from_bytes
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 from datetime import datetime, timedelta
 from .models import EmailMessage, EmailAccount
 import pytz
+import time
+import imaplib
+
+
+
+MAX_IDLE_TIME = 900  # 15 minutes for safety (below Gmail's 29 min limit)
+RECONNECT_DELAY = 1  # delay before reconnect attempt
+
 
 def decode_mime_words(header):
     decoded = decode_header(header or '')
@@ -25,73 +35,81 @@ def get_email_content(email_message):
     return ""
 
 def get_emails_checker(email, password, host, folders=['INBOX', '[Gmail]/Spam'], since_days=3650, since_mins=None, since_hours=None):
+    from datetime import datetime, timedelta
     all_emails = []
     try:
-        context = ssl.create_default_context()
-        with IMAPClient(host, ssl=True, ssl_context=context) as client:
-            client.login(email, password)
-            print(email, '-' * 30)
+        mail = imaplib.IMAP4_SSL(host)
+        mail.login(email, password)
+        print(email, '-'*30, '\n')
+        since_date = None
+        if since_days:
+            since_date = (datetime.now() - timedelta(days=since_days)).strftime("%d-%b-%Y")
+        elif since_mins:
+            print('-'*40, 'minute')
+            since_date = (datetime.now() - timedelta(minutes=since_mins)).strftime("%d-%b-%Y")
+        elif since_hours:
+            since_date = (datetime.now() - timedelta(hours=since_hours)).strftime("%d-%b-%Y")
+        
 
-            # Define cutoff datetime
-            if since_mins:
-                since_date = datetime.now() - timedelta(minutes=since_mins)
-            elif since_hours:
-                since_date = datetime.now() - timedelta(hours=since_hours)
-            else:
-                since_date = datetime.now() - timedelta(days=since_days)
+        for folder in folders:
+            mail.select(folder)
+            print('folder', folder)
+            status, data = mail.uid('search', None, f'(SINCE {since_date})')
+            if status != 'OK':
+                continue
 
-            since_for_search = since_date.date()  # IMAP only uses date
+            uids = data[0].split()
+            if not uids:
+                continue
 
-            for folder in folders:
-                try:
-                    client.select_folder(folder)
-                    print('📂 Folder:', folder)
-                except Exception as e:
-                    print(f"⚠️ Failed to select folder {folder}: {e}")
+            uids_str = b','.join(uids)
+            try:    
+                result, fetch_data = mail.uid('fetch', uids_str, '(RFC822)')
+                if result != 'OK':
                     continue
+            except Exception as e:
+                print('error', e)
+                continue
 
-                messages = client.search(["SINCE", since_for_search])
-                if not messages:
-                    continue
-
-                response = client.fetch(messages, ["BODY.PEEK[HEADER]"])
-                for msgid, data in response.items():
-                    raw_headers = data[b'BODY[HEADER]']
+            for i in range(0, len(fetch_data), 2):
+                if isinstance(fetch_data[i], tuple):
+                    raw_email = fetch_data[i][1]
                     try:
-                        msg = message_from_bytes(raw_headers)
-                    except Exception as e:
-                        print(f"❌ Failed to parse email: {e}")
-                        continue
-
-                    try:
-                        email_date = parsedate_to_datetime(msg.get("Date"))
-                        if email_date and email_date < since_date:
-                            continue  # Skip older than target datetime
+                        email_message = message_from_bytes(raw_email)
                     except:
                         continue
 
-                    subject = decode_mime_words(msg.get("Subject"))
-                    from_header = msg.get("From", "")
-                    from_full = decode_mime_words(from_header)
-                    name, sender_email = parseaddr(from_full)
+                    subject = decode_header(email_message.get('Subject'))[0][0]
+                    if isinstance(subject, bytes):
+                        subject = subject.decode(errors='ignore')
+
+                    from_addr = decode_header(email_message.get('From'))[0][0]
+                    if isinstance(from_addr, bytes):
+                        from_addr = from_addr.decode(errors='ignore')
+
+                    content = get_email_content(email_message)
+                    name, sender_email = parseaddr(from_addr)
+                    name, encoding = decode_header(name)[0]
+                    if isinstance(name, bytes):
+                        name = name.decode(encoding or 'utf-8', errors='ignore')
 
                     email_data = {
-                        'subject': subject,
-                        'from': from_full,
-                        'date': str(email_date),
-                        'body': "",  # body can be fetched in second pass or omitted
+                        'subject': str(subject),
+                        'from': str(from_addr),
+                        'date': str(email_message.get('Date')),
+                        'body': str(content),
                         'folder': folder,
                         'host': host,
                         'name': name,
-                        'sender_email': sender_email,
+                        'sender_email': sender_email
                     }
                     all_emails.append(email_data)
 
         return all_emails
-
     except Exception as e:
-        print('❌ General error:', e)
+        print('error', e)
         return None
+
 def check_folders(host):
     if(host == 'imap.gmail.com'):
         return ['INBOX', '[Gmail]/Spam']
@@ -145,16 +163,24 @@ def insert_and_show_recent_emails(account):
 
 def parse_email_date(date_str):
     try:
-        # First try using email.utils.parsedate_to_datetime which is designed for email dates
         return parsedate_to_datetime(date_str)
     except Exception as e:
         try:
-            # If that fails, try parsing with datetime.strptime
-            # Remove the 'GMT' and replace with '+0000' for proper timezone format
-            date_str = date_str.replace('GMT', '+0000')
-            return datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %z')
+            # Only call replace if date_str is a string
+            if isinstance(date_str, str):
+                date_str = date_str.replace('GMT', '+0000')
+                print('date_str', date_str)
+                return datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %z')
+            else:
+                # If it's a list, try to get the first element
+                if isinstance(date_str, list) and date_str:
+                    first_element = date_str[0]
+                    if isinstance(first_element, str):  # Make sure the element is a string
+                        print('first_element', first_element)
+                        date_str = first_element.replace('GMT', '+0000')
+                        return datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %z')
+                return datetime.now(pytz.UTC)  # Return current time if conversion fails
         except Exception as e:
-            # If all parsing fails, return current time
             return datetime.now(pytz.UTC)
 
 def insert_to_db(email_data, acc_email):
@@ -182,3 +208,64 @@ def insert_to_db(email_data, acc_email):
         return None
     return email_data
 
+def listen_for_emails(email, password, host='imap.gmail.com', folder='INBOX'):
+    import ssl
+    from imapclient import IMAPClient
+    from email import message_from_bytes
+    from email.header import decode_header
+    from email.utils import parseaddr, parsedate_to_datetime
+    import time
+
+    context = ssl.create_default_context()
+    all_emails = []
+
+    try:
+        with IMAPClient(host, port=993, ssl=True, ssl_context=context) as client:
+            print(f'🔐 Logging in {email} to {folder}')
+            client.login(email.strip(), password.strip())
+            client.select_folder(folder)
+
+            while True:
+                idle = client.idle()
+                print(f"[{email} - {folder}] IDLE waiting for new emails...")
+                responses = client.idle_check(timeout=MAX_IDLE_TIME)
+                client.idle_done()
+
+                if responses:
+                    print(f"[{email} - {folder}] 📥 New email detected!")
+                    messages = client.search(['UNSEEN'])
+                    if messages:
+                        response = client.fetch(messages, ["BODY.PEEK[HEADER]"])
+                        for msgid, data in response.items():
+                            raw_headers = data[b'BODY[HEADER]']
+                            msg = message_from_bytes(raw_headers)
+                            try:
+                                email_date = parsedate_to_datetime(msg.get("Date"))
+                            except:
+                                continue
+                            subject = decode_mime_words(msg.get("Subject"))
+                            from_header = decode_mime_words(msg.get("From", ""))
+                            name, sender_email = parseaddr(from_header)
+
+                            email_data = {
+                                'subject': subject,
+                                'from': from_header,
+                                'date': str(email_date),
+                                'body': '',
+                                'folder': folder,
+                                'host': host,
+                                'name': name,
+                                'sender_email': sender_email
+                            }
+
+                            from .models import EmailAccount
+                            acc = EmailAccount.objects.filter(email_address=email).first()
+                            if acc:
+                                from .mail_checker import insert_to_db
+                                insert_to_db(email_data, acc.email_address)
+                time.sleep(1)
+    except (socket.error, EOFError, IMAPClientError) as e:
+        print(f"❌ Connection lost on {email} - {folder}: {str(e)}")
+        time.sleep(RECONNECT_DELAY)
+    except Exception as e:
+        print(f"[{email} - {folder}] ❌ Error: {e}")
