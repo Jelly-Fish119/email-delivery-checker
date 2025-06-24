@@ -13,7 +13,6 @@ class DashboardConfig(AppConfig):
         if not connection.introspection.table_names():
             return
 
-        from .models import EmailAccount
         from .mail_checker import start_realtime_listeners
 
         threading.Thread(target=start_realtime_listeners, daemon=True).start()

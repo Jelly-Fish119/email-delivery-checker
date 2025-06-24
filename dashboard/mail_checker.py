@@ -271,12 +271,12 @@ def listen_for_emails(email, password, host='imap.gmail.com', folder='INBOX'):
         print(f"[{email} - {folder}] ❌ Error: {e}")
 
 def start_realtime_listeners():
-            accounts = EmailAccount.objects.all()
-            for account in accounts:
-                folders = check_folders(account.imap_host_name)
-                for folder in folders:
-                    threading.Thread(
-                        target=listen_for_emails,
-                        args=(account.email_address, account.password, account.imap_host_name, folder),
-                        daemon=True
-                    ).start()
+    accounts = EmailAccount.objects.all()
+    for account in accounts:
+        folders = check_folders(account.imap_host_name)
+        for folder in folders:
+            threading.Thread(
+                target=listen_for_emails,
+                args=(account.email_address, account.password, account.imap_host_name, folder),
+                daemon=True
+            ).start()
