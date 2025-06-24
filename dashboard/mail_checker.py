@@ -10,7 +10,7 @@ from .models import EmailMessage, EmailAccount
 import pytz
 import time
 import imaplib
-
+import threading
 
 
 MAX_IDLE_TIME = 900  # 15 minutes for safety (below Gmail's 29 min limit)
@@ -269,3 +269,14 @@ def listen_for_emails(email, password, host='imap.gmail.com', folder='INBOX'):
         time.sleep(RECONNECT_DELAY)
     except Exception as e:
         print(f"[{email} - {folder}] ❌ Error: {e}")
+
+def start_realtime_listeners():
+            accounts = EmailAccount.objects.all()
+            for account in accounts:
+                folders = check_folders(account.imap_host_name)
+                for folder in folders:
+                    threading.Thread(
+                        target=listen_for_emails,
+                        args=(account.email_address, account.password, account.imap_host_name, folder),
+                        daemon=True
+                    ).start()
