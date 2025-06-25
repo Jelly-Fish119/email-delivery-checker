@@ -14,3 +14,7 @@ from django.core.wsgi import get_wsgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'email_checker_pro.settings')
 
 application = get_wsgi_application()
+
+# only import after application is ready
+from dashboard.mail_checker import start_realtime_listeners
+start_realtime_listeners()

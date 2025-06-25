@@ -208,6 +208,8 @@ def insert_to_db(email_data, acc_email):
         return None
     return email_data
 
+started_daemon = False
+
 def listen_for_emails(email, password, host='imap.gmail.com', folder='INBOX'):
     import ssl
     from imapclient import IMAPClient
@@ -263,7 +265,7 @@ def listen_for_emails(email, password, host='imap.gmail.com', folder='INBOX'):
                             if acc:
                                 from .mail_checker import insert_to_db
                                 insert_to_db(email_data, acc.email_address)
-                time.sleep(1)
+                time.sleep(10)
     except (socket.error, EOFError, IMAPClientError) as e:
         print(f"❌ Connection lost on {email} - {folder}: {str(e)}")
         time.sleep(RECONNECT_DELAY)
@@ -271,6 +273,11 @@ def listen_for_emails(email, password, host='imap.gmail.com', folder='INBOX'):
         print(f"[{email} - {folder}] ❌ Error: {e}")
 
 def start_realtime_listeners():
+    global started_daemon
+    import sys
+    if started_daemon or 'makemigrations' in sys.argv or 'migrate' in sys.argv:
+        return
+    started_daemon = True
     accounts = EmailAccount.objects.all()
     for account in accounts:
         folders = check_folders(account.imap_host_name)
